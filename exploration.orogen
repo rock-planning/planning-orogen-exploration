@@ -1,0 +1,30 @@
+name "exploration"
+version "0.1"
+
+using_library "envire"
+using_library "exploration"
+import_types_frm 'base'
+import_types_from 'envire'
+import_types_from "explorationTypes.hpp"
+
+import_types_from "base"
+
+task_context "Task" do
+    needs_configuration
+
+    property "config_value", "/std/string"
+
+    input_port('envire_environment_in', ro_ptr('std/vector</envire/BinaryEvent>')).
+        doc("Traversability map. Has to be received once")
+
+    input_port('start_position_in', 'base/Vector3d').
+        doc "Start position in the world, just using x and y"
+
+    output_port('goal_out', 'base/Vector3d').
+        doc "Calculated goal, using x and y"
+
+
+
+    periodic 0.1
+end
+
