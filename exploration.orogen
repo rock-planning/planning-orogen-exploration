@@ -3,7 +3,7 @@ version "0.1"
 
 using_library "envire"
 using_library "exploration"
-import_types_frm 'base'
+import_types_from 'base'
 import_types_from 'envire'
 import_types_from "explorationTypes.hpp"
 
