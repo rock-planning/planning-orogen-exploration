@@ -4,6 +4,15 @@
 #define EXPLORATION_TASK_TASK_HPP
 
 #include "exploration/TaskBase.hpp"
+#include "orocos/envire/Orocos.hpp"
+#include "envire/Core.hpp"
+#include "envire/maps/MLSGrid.hpp"
+#include "envire/maps/TraversabilityGrid.hpp"
+#include "exploration/Planner.hpp"
+
+namespace envire {
+    class Environment;
+}
 
 namespace exploration {
 
@@ -16,19 +25,27 @@ namespace exploration {
      * The name of a TaskContext is primarily defined via:
      \verbatim
      deployment 'deployment_name'
-         task('custom_task_name','exploration::Task')
+     task('custom_task_name','exploration::Task')
      end
      \endverbatim
      *  It can be dynamically adapted when the deployment is called with a prefix argument. 
      */
     class Task : public TaskBase
     {
-	friend class TaskBase;
-    protected:
+        friend class TaskBase;
+        protected:
 
-
-
-    public:
+        Planner planner;
+        envire::Environment* mEnv; 
+        RTT::FlowStatus mTraversabilityMapStatus;
+        RTT::FlowStatus receiveEnvireData();
+        boost::intrusive_ptr<envire::MLSGrid> mMlsGrid;
+        envire::TraversabilityGrid* traversability;
+        base::Vector3d start_vec;
+        std::vector<base::Vector3d> goals;
+        bool extractTraversability();
+        bool extractMLS();
+        public:
         /** TaskContext constructor for Task
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
          * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
@@ -43,8 +60,8 @@ namespace exploration {
         Task(std::string const& name, RTT::ExecutionEngine* engine);
 
         /** Default deconstructor of Task
-         */
-	~Task();
+        */
+        ~Task();
 
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the
@@ -55,8 +72,8 @@ namespace exploration {
          * in the task context definition with (for example):
          \verbatim
          task_context "TaskName" do
-           needs_configuration
-           ...
+         needs_configuration
+         ...
          end
          \endverbatim
          */

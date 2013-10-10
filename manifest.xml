@@ -15,4 +15,7 @@
   <depend package="dummy-dependency-n" />
   -->
   <depend package="control/exploration" />
+  <depend package="slam/envire" />
+  <depend package="base/orogen/types"/>
+  <depend package="slam/orogen/envire" />
 </package>
