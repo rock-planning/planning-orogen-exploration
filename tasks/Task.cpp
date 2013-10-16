@@ -30,11 +30,9 @@ bool Task::configureHook()
 {
     if (! TaskBase::configureHook())
         return false;
-    return true;
-
     mEnv = new envire::Environment();
 
-
+    return true;
 }
 bool Task::startHook()
 {
@@ -42,7 +40,6 @@ bool Task::startHook()
         return false;
 
     planner = Planner();
-
     return true;
 }
 void Task::updateHook()
@@ -107,6 +104,7 @@ RTT::FlowStatus Task::receiveEnvireData()
 {
     envire::OrocosEmitter::Ptr binary_event;
     RTT::FlowStatus ret = mTraversabilityMapStatus;
+
     while(_envire_environment_in.read(binary_event) == RTT::NewData)
     {
         ret = RTT::NewData;

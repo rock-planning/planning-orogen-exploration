@@ -15,7 +15,7 @@ ENV['LC_NUMERIC'] = 'C'
 Orocos.run 'envire::SynchronizationTransmitter' => 'transmitter', 
         'corridor_planner::Traversability' => 'traversability',
         'exploration::Task' => 'exploration',
-        "wait" => 1000 do
+        :gdb => 'false', "wait" => 1000 do
         
     #Orocos.conf.load_dir("./config")
     
@@ -35,7 +35,8 @@ Orocos.run 'envire::SynchronizationTransmitter' => 'transmitter',
     exploration.start()
     # CONNECT PORTS
     transmitter.envire_events.connect_to(traversability.mls_map)
-
+    transmitter.envire_events.connect_to(exploration.envire_environment_in)
+    
     # LOAD MAP
     transmitter.loadEnvironment("#{ENV['AUTOPROJ_PROJECT_BASE']}/bundles/spacebot/data/traversability_maps/dlr.env")
     
