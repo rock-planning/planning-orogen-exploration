@@ -74,9 +74,9 @@ void Task::updateHook()
 
     PointList frontiers;
     GridPoint start;
-    _start_position_in.read(start_vec);
-    start.x = start_vec.x();
-    start.y = start_vec.y();
+    //_start_position_in.read(start_vec);
+    //start.x = start_vec.position.x();
+    //start.y = start_vec.position.y();
     PointList goals_tmp = planner.getFrontierCells(map, start, false);
 
     for(PointList::iterator it = goals_tmp.begin(); it != goals_tmp.end(); ++it) {
