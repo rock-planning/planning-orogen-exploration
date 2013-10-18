@@ -1,7 +1,6 @@
 require 'orocos'
 require 'vizkit'
 require 'readline'
-
 Orocos::CORBA.max_message_size = 12000000 # stucks if > than this
 
 include Orocos
@@ -15,7 +14,7 @@ ENV['LC_NUMERIC'] = 'C'
 Orocos.run 'envire::SynchronizationTransmitter' => 'transmitter', 
         'corridor_planner::Traversability' => 'traversability',
         'exploration::Task' => 'exploration',
-        :gdb => 'false', "wait" => 1000 do
+        "wait" => 1000 do
         
     #Orocos.conf.load_dir("./config")
     
@@ -35,8 +34,8 @@ Orocos.run 'envire::SynchronizationTransmitter' => 'transmitter',
     exploration.start()
     # CONNECT PORTS
     transmitter.envire_events.connect_to(traversability.mls_map)
-    transmitter.envire_events.connect_to(exploration.envire_environment_in)
-    
+   # transmitter.envire_events.connect_to(exploration.envire_environment_in)
+    traversability.traversability_map.connect_to(exploration.envire_environment_in) 
     # LOAD MAP
     transmitter.loadEnvironment("#{ENV['AUTOPROJ_PROJECT_BASE']}/bundles/spacebot/data/traversability_maps/dlr.env")
     
