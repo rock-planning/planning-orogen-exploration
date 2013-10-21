@@ -39,7 +39,6 @@ namespace exploration {
         envire::Environment* mEnv; 
         RTT::FlowStatus mTraversabilityMapStatus;
         RTT::FlowStatus receiveEnvireData();
-        boost::intrusive_ptr<envire::MLSGrid> mMlsGrid;
         envire::TraversabilityGrid* traversability;
         base::samples::RigidBodyState start_vec;
         std::vector<base::Vector3d> goals;

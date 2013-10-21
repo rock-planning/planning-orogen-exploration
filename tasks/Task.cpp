@@ -1,7 +1,6 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "Task.hpp"
-
 using namespace exploration;
 
     Task::Task(std::string const& name)
@@ -31,7 +30,6 @@ bool Task::configureHook()
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
-
     return true;
 }
 bool Task::startHook()
@@ -45,30 +43,30 @@ bool Task::startHook()
 void Task::updateHook()
 {
     TaskBase::updateHook();
-
     // Receive map.
     RTT::FlowStatus ret = receiveEnvireData();
-    if (ret == RTT::NoData) {
+    if (ret == RTT::NoData || !traversability) {
         return;
     }
 
 
     // convert TraversabilityMap to GridMap
-
-    size_t xi = mMlsGrid->getCellSizeX();
-    size_t yi = mMlsGrid->getCellSizeY();
+    size_t xi = traversability->getCellSizeX();
+    size_t yi = traversability->getCellSizeY();
     double x = 0.0, y = 0.0;
     size_t gridX,gridY;
     traversability->fromGrid(xi,yi,x,y);
     struct GridPoint point;
     GridMap* map = new GridMap((int)x, (int)y);
+    if(x<=0 || y<=0)
+        return;
 
-    for(int i = 0; i < x; x++){
+    for(int i = 0; i < xi; i++){
         point.x = i;
-        for (int j = 0; j < y; y++){
+        for (int j = 0; j < yi; j++){
             point.y = j;
             traversability->toGrid(x,y,gridX,gridY);
-            map->setData(point,traversability->getFromRaster(traversability->getBands().front(),gridX,gridY));
+            map->setData(point,traversability->getFromRaster(traversability->getBands().front(),x,y));
         }
     }
 
