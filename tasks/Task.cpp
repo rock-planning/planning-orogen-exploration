@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "Task.hpp"
+#include <envire/operators/SimpleTraversability.hpp>
 using namespace exploration;
 
     Task::Task(std::string const& name)
@@ -38,6 +39,18 @@ bool Task::startHook()
         return false;
 
     planner = Planner();
+    
+    //Add fake camera looking forward
+    Polygon poly;
+    FloatPoint p;
+    p.x =   -2; p.y =  2; poly.push_back(p);
+    p.x =   -2; p.y = -2; poly.push_back(p);
+    p.x =  80; p.y = -40; poly.push_back(p);
+    p.x =  80; p.y =  40; poly.push_back(p);
+    planner.addSensor(poly); 
+    
+    initialized = false;
+    
     return true;
 }
 void Task::updateHook()
@@ -49,38 +62,158 @@ void Task::updateHook()
         return;
     }
 
-
-    // convert TraversabilityMap to GridMap
+    envire::TraversabilityGrid::ArrayType& trav_array = traversability->getGridData();
+    
     size_t xi = traversability->getCellSizeX();
     size_t yi = traversability->getCellSizeY();
-    double x = 0.0, y = 0.0;
-    size_t gridX,gridY;
-    traversability->fromGrid(xi,yi,x,y);
     struct GridPoint point;
-    GridMap* map = new GridMap((int)x, (int)y);
-    if(x<=0 || y<=0)
+    
+    if(!initialized)
+    {
+        GridMap map((int)xi, (int)yi);
+        int cnt = 0;
+        for(size_t y = 0; y < yi; y++){
+            point.y = y;
+            for (size_t x = 0; x < xi; x++){
+                point.x = x;
+                char value = 0;
+                switch(trav_array[y][x])
+                {
+                    case envire::SimpleTraversability::CLASS_UNKNOWN:
+                        value = 0;
+                        break;
+                    case envire::SimpleTraversability::CLASS_OBSTACLE:
+                        cnt++;
+                        value = 1;
+                        break;
+                    default:
+                        break;
+                }
+                map.setData(point, value);
+            }
+        }
+        
+        planner.initCoverageMap(&map);
+        std::cout << "Obstacle cnt " << cnt << std::endl;
+        initialized = true;
+        std::cout << "Planner init complete" << std::endl;
+    }
+    {
+        if(ret == RTT::NewData)
+        {
+            //update obstacles
+            PointList obstacles;
+        
+            for(size_t y = 0; y < yi; y++){
+                point.y = y;
+                for (size_t x = 0; x < xi; x++){
+                    point.x = x;
+                    switch(trav_array[y][x])
+                    {
+                        case envire::SimpleTraversability::CLASS_OBSTACLE:
+                            obstacles.push_back(point);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            planner.setCoverageMap(obstacles, 1);
+        }
+        std::cout << "Updated obstacles" << std::endl;
+
+    }
+
+    ret = RTT::NoData;
+    base::samples::RigidBodyState robotPose;
+    while(_pose_samples.read(robotPose, true) == RTT::NewData)
+    {
+        ret = RTT::NewData;
+        exploration::Pose pose;
+        pose.theta = robotPose.getYaw();
+        size_t x, y;
+
+        if(traversability->toGrid(robotPose.position, x, y, traversability->getFrameNode()))
+        {
+            std::cout << "Adding Re4ading" << std::endl;
+            pose.x = x;
+            pose.y = y;
+            planner.addReading(pose);
+        }
+    }
+    
+    if(ret == RTT::NoData)
         return;
 
-    for(int i = 0; i < xi; i++){
-        point.x = i;
-        for (int j = 0; j < yi; j++){
-            point.y = j;
-            traversability->toGrid(x,y,gridX,gridY);
-            map->setData(point,traversability->getFromRaster(traversability->getBands().front(),x,y));
+    exploration::Pose pose;
+    pose.x = robotPose.position.x();
+    pose.y = robotPose.position.y();
+    pose.theta = robotPose.getYaw();
+
+    
+    exploration::Pose goalPose = planner.getCoverageTarget(pose); 
+    
+    PointList frontiers;
+    FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
+
+    for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
+        for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
+            double x_tr;
+            double y_tr;
+            traversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
+            goals.push_back(base::Vector3d(x_tr, y_tr, 0));
         }
     }
 
-    PointList frontiers;
-    GridPoint start;
-    //_start_position_in.read(start_vec);
-    //start.x = start_vec.position.x();
-    //start.y = start_vec.position.y();
-    PointList goals_tmp = planner.getFrontierCells(map, start, false);
+    if(_explore_map.connected())
+    {
+        std::cout << "Outputting new map" << std::endl;
+        envire::Environment tr;
+        envire::TraversabilityGrid *exploreMap = new envire::TraversabilityGrid(traversability->getWidth(), traversability->getHeight(), traversability->getScaleX(), traversability->getScaleY(), traversability->getOffsetX(), traversability->getOffsetY());
+        
+        envire::FrameNode *fr = new envire::FrameNode(traversability->getFrameNode()->getTransform());
+        
+        envire::TraversabilityGrid::ArrayType& exp_array = exploreMap->getGridData();
+        
+        const GridMap &map(planner.getCoverageMap());
+        
+        size_t xi = traversability->getCellSizeX();
+        size_t yi = traversability->getCellSizeY();
+        std::cout << "Output map size " << xi << " " << yi << std::endl;
+        struct GridPoint point;
+        
+        for(size_t y = 0; y < yi; y++){
+            point.y = y;
+            for (size_t x = 0; x < xi; x++){
+                point.x = x;
+                char value = map.getData(point);
+                switch(value)
+                {
+                    case -1:
+                        exp_array[y][x] = envire::SimpleTraversability::CLASS_UNKNOWN;
+                        break;
+                    case 0:
+                        exp_array[y][x] = envire::SimpleTraversability::CUSTOM_CLASSES + 5;
+                        break;
+                    case 1:
+                        exp_array[y][x] = envire::SimpleTraversability::CLASS_OBSTACLE;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
 
-    for(PointList::iterator it = goals_tmp.begin(); it != goals_tmp.end(); ++it) {
-            goals.push_back(base::Vector3d(it->x, it->y, 0));
+        tr.getRootNode()->addChild(fr);
+        tr.attachItem(exploreMap, fr);
+        
+        exploreMap->setFrameNode(fr);
+        
+        envire::OrocosEmitter emitter(&tr, _explore_map);
+        emitter.setTime(base::Time::now());
+        emitter.flush();        
     }
-
+    
     _goals_out.write(goals);
 
 }
