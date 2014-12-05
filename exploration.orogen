@@ -1,4 +1,4 @@
-name "exploration"
+    name "exploration"
 version "0.1"
 
 using_library "envire"
@@ -30,4 +30,3 @@ task_context "Task" do
 
    port_driven 'envire_environment_in' , 'pose_samples'
 end
-

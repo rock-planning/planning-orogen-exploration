@@ -28,6 +28,8 @@ Task::~Task()
 
 bool Task::configureHook()
 {
+        std::cout << "called configure hook" << std::endl;
+
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
@@ -35,6 +37,8 @@ bool Task::configureHook()
 }
 bool Task::startHook()
 {
+            std::cout << "called start hook" << std::endl;
+
     if (! TaskBase::startHook())
         return false;
 
@@ -57,15 +61,18 @@ void Task::updateHook()
 {
     TaskBase::updateHook();
     // Receive map.
-    RTT::FlowStatus ret = receiveEnvireData();
+
+    RTT::FlowStatus ret = receiveEnvireData(); //hier gibt es keine traversGrids
     if (ret == RTT::NoData || !traversability) {
+        std::cout << "no data available" << std::endl;
         return;
-    }
+    } 
 
     envire::TraversabilityGrid::ArrayType& trav_array = traversability->getGridData();
     
     size_t xi = traversability->getCellSizeX();
     size_t yi = traversability->getCellSizeY();
+    std::cout << "getCellSizeX: " << xi << std::cout << "   getCellSizeY: " << yi << std::endl;
     struct GridPoint point;
     
     if(!initialized)
@@ -121,7 +128,7 @@ void Task::updateHook()
             planner.setCoverageMap(obstacles, 1);
         }
         std::cout << "Updated obstacles" << std::endl;
-
+        std::cout << "stuck here" << std::endl;
     }
 
     ret = RTT::NoData;
@@ -234,21 +241,30 @@ void Task::cleanupHook()
 RTT::FlowStatus Task::receiveEnvireData()
 {
     envire::OrocosEmitter::Ptr binary_event;
-    RTT::FlowStatus ret = mTraversabilityMapStatus;
-
+    RTT::FlowStatus ret = RTT::NoData;
+    //RTT::FlowStatus ret = mTraversabilityMapStatus;
     while(_envire_environment_in.read(binary_event) == RTT::NewData)
     {
         ret = RTT::NewData;
+        std::cout << "NewData in receiveEnvireData: " << ret << std::endl;
         mEnv->applyEvents(*binary_event);
     }
 
-    if ((ret == RTT::NoData) || (ret == RTT::OldData))
+    if ((ret == RTT::NoData) /*|| (ret == RTT::OldData)*/)
     {
+        std::cout << "NoData in receiveEnvireData: " << ret << std::endl;
+        return ret;
+    }
+
+    if (/*(ret == RTT::NoData) || */(ret == RTT::OldData))
+    {
+        std::cout << "OldData in receiveEnvireData: " << ret << std::endl;
         return ret;
     }
 
     // Extracts data and adds it to the planner. 
     if(!extractTraversability()) {
+        std::cout << "Extract traversability is false" << std::endl;
         return mTraversabilityMapStatus;
     }
 
@@ -263,7 +279,8 @@ bool Task::extractTraversability() {
     // Lists all received traversability maps.
     std::stringstream ss;
     if(maps.size()) {
-        ss << "Received traversability map(s): " << std::endl;
+        //ss used for output strings
+        std::cout << "Received traversability map(s): " << std::endl;
 
         std::string trav_map_id;
         std::vector<envire::TraversabilityGrid*>::iterator it = maps.begin();

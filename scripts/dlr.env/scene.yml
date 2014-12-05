@@ -1,0 +1,22 @@
+objects:
+- class: 'envire::FrameNode'
+  id: '/0'
+  label: ''
+  transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+- class: 'envire::MLSGrid'
+  id: '/4'
+  label: ''
+  immutable: '0'
+  cellSizeX: '500'
+  cellSizeY: '400'
+  scalex: '0.10000000000000001'
+  scaley: '0.10000000000000001'
+  offsetx: '-18'
+  offsety: '-14'
+  width: '500'
+  height: '400'
+  hasCellColor: '0'
+links:
+- type: cartesianMapGraph
+  map: '/4'
+  node: '/0'
