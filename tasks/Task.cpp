@@ -28,8 +28,6 @@ Task::~Task()
 
 bool Task::configureHook()
 {
-        std::cout << "called configure hook" << std::endl;
-
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
@@ -37,10 +35,10 @@ bool Task::configureHook()
 }
 bool Task::startHook()
 {
-            std::cout << "called start hook" << std::endl;
-
     if (! TaskBase::startHook())
         return false;
+
+    mTraversabilityMapStatus = RTT::NoData;
 
     planner = Planner();
     
@@ -57,14 +55,15 @@ bool Task::startHook()
     
     return true;
 }
+
 void Task::updateHook()
 {
     TaskBase::updateHook();
     // Receive map.
 
     RTT::FlowStatus ret = receiveEnvireData(); //hier gibt es keine traversGrids
-    if (ret == RTT::NoData || !traversability) {
-        std::cout << "no data available" << std::endl;
+    if (ret == RTT::NoData || ret == RTT::OldData || !traversability) {
+        //RTT::log(RTT::Warning) << "no data available" << RTT::endlog();
         return;
     } 
 
@@ -72,7 +71,7 @@ void Task::updateHook()
     
     size_t xi = traversability->getCellSizeX();
     size_t yi = traversability->getCellSizeY();
-    std::cout << "getCellSizeX: " << xi << std::cout << "   getCellSizeY: " << yi << std::endl;
+    //std::cout << "getCellSizeX: " << xi << "   getCellSizeY: " << yi << std::endl;
     struct GridPoint point;
     
     if(!initialized)
@@ -105,7 +104,7 @@ void Task::updateHook()
         initialized = true;
         std::cout << "Planner init complete" << std::endl;
     }
-    {
+    //{
         if(ret == RTT::NewData)
         {
             //update obstacles
@@ -126,10 +125,9 @@ void Task::updateHook()
                 }
             }
             planner.setCoverageMap(obstacles, 1);
+            std::cout << "Updated obstacles" << std::endl;
         }
-        std::cout << "Updated obstacles" << std::endl;
-        std::cout << "stuck here" << std::endl;
-    }
+    //}
 
     ret = RTT::NoData;
     base::samples::RigidBodyState robotPose;
@@ -241,30 +239,30 @@ void Task::cleanupHook()
 RTT::FlowStatus Task::receiveEnvireData()
 {
     envire::OrocosEmitter::Ptr binary_event;
-    RTT::FlowStatus ret = RTT::NoData;
-    //RTT::FlowStatus ret = mTraversabilityMapStatus;
+    //RTT::FlowStatus ret = RTT::NoData;
+    RTT::FlowStatus ret = mTraversabilityMapStatus;
     while(_envire_environment_in.read(binary_event) == RTT::NewData)
     {
         ret = RTT::NewData;
-        std::cout << "NewData in receiveEnvireData: " << ret << std::endl;
+        //RTT::log(RTT::Warning) << "NewData in receiveEnvireData: " << ret << RTT::endlog();
         mEnv->applyEvents(*binary_event);
     }
 
     if ((ret == RTT::NoData) /*|| (ret == RTT::OldData)*/)
     {
-        std::cout << "NoData in receiveEnvireData: " << ret << std::endl;
+        //RTT::log(RTT::Warning) << "NoData in receiveEnvireData: " << ret << RTT::endlog();
         return ret;
     }
 
     if (/*(ret == RTT::NoData) || */(ret == RTT::OldData))
     {
-        std::cout << "OldData in receiveEnvireData: " << ret << std::endl;
+        //RTT::log(RTT::Warning) << "OldData in receiveEnvireData: " << ret << RTT::endlog();
         return ret;
     }
 
     // Extracts data and adds it to the planner. 
     if(!extractTraversability()) {
-        std::cout << "Extract traversability is false" << std::endl;
+        RTT::log(RTT::Warning) << "Extracting traversability failed" << RTT::endlog();
         return mTraversabilityMapStatus;
     }
 
@@ -281,12 +279,12 @@ bool Task::extractTraversability() {
     if(maps.size()) {
         //ss used for output strings
         std::cout << "Received traversability map(s): " << std::endl;
-
+/////
         std::string trav_map_id;
         std::vector<envire::TraversabilityGrid*>::iterator it = maps.begin();
         for(int i=0; it != maps.end(); ++it, ++i)
         {
-            ss << i << ": " << (*it)->getUniqueId() << std::endl;
+            std::cout << i << ": " << (*it)->getUniqueId() << std::endl;
         }
         RTT::log(RTT::Info) << ss.str() << RTT::endlog(); 
     } else {

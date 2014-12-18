@@ -27,6 +27,7 @@ task_context "Task" do
 
     output_port('explore_map', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Debug port, gives the current explored map as envire::Traversability map")
+        keep_last_written_value(false)
 
-   port_driven 'envire_environment_in' , 'pose_samples'
+   port_driven 'envire_environment_in', 'pose_samples'
 end
