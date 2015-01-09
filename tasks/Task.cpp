@@ -248,15 +248,9 @@ RTT::FlowStatus Task::receiveEnvireData()
         mEnv->applyEvents(*binary_event);
     }
 
-    if ((ret == RTT::NoData) /*|| (ret == RTT::OldData)*/)
+    if ((ret == RTT::NoData) || (ret == RTT::OldData))
     {
         //RTT::log(RTT::Warning) << "NoData in receiveEnvireData: " << ret << RTT::endlog();
-        return ret;
-    }
-
-    if (/*(ret == RTT::NoData) || */(ret == RTT::OldData))
-    {
-        //RTT::log(RTT::Warning) << "OldData in receiveEnvireData: " << ret << RTT::endlog();
         return ret;
     }
 
