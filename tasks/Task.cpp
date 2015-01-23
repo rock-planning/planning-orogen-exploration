@@ -31,6 +31,7 @@ bool Task::configureHook()
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
+    _goals_out.keepLastWrittenValue(false);
     return true;
 }
 bool Task::startHook()
@@ -61,7 +62,7 @@ void Task::updateHook()
     TaskBase::updateHook();
     // Receive map.
 
-    RTT::FlowStatus ret = receiveEnvireData(); //hier gibt es keine traversGrids
+    RTT::FlowStatus ret = receiveEnvireData();
     if (ret == RTT::NoData || !traversability) {
         //RTT::log(RTT::Warning) << "no data available" << RTT::endlog();
         return;
