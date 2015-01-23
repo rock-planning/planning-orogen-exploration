@@ -62,7 +62,7 @@ void Task::updateHook()
     // Receive map.
 
     RTT::FlowStatus ret = receiveEnvireData(); //hier gibt es keine traversGrids
-    if (ret == RTT::NoData || ret == RTT::OldData || !traversability) {
+    if (ret == RTT::NoData || !traversability) {
         //RTT::log(RTT::Warning) << "no data available" << RTT::endlog();
         return;
     } 

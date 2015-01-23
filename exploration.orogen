@@ -20,6 +20,7 @@ task_context "Task" do
 
     output_port('goals_out', 'std/vector<base/Vector3d>').
         doc "Calculated goal, using x and y"
+        keep_last_written_value(false)
 
     input_port("pose_samples", "base/samples/RigidBodyState").
         needs_reliable_connection.
