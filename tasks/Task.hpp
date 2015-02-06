@@ -44,7 +44,10 @@ namespace exploration {
         std::vector<base::Vector3d> goals;
         bool extractTraversability();
         bool extractMLS();
+        RTT::FlowStatus updateMap();
+        bool flushMap();
         bool initialized;
+        exploration::Pose pose;
         public:
         /** TaskContext constructor for Task
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
