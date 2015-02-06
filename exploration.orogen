@@ -1,4 +1,4 @@
-name "exploration"
+    name "exploration"
 version "0.1"
 
 using_library "envire"
@@ -29,5 +29,5 @@ task_context "Task" do
         doc("Debug port, gives the current explored map as envire::Traversability map")
 
     port_driven 'envire_environment_in', 'pose_samples'
-end
 
+end

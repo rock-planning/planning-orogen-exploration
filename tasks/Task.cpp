@@ -32,6 +32,7 @@ bool Task::configureHook()
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
+    _goals_out.keepLastWrittenValue(false);
     return true;
 }
 bool Task::startHook()
@@ -39,6 +40,8 @@ bool Task::startHook()
     mTraversabilityMapStatus = RTT::NoData;
     if (! TaskBase::startHook())
         return false;
+
+    mTraversabilityMapStatus = RTT::NoData;
 
     planner = Planner();
     
@@ -56,14 +59,16 @@ bool Task::startHook()
     
     return true;
 }
+
 void Task::updateHook()
 {   TaskBase::updateHook();
     
     // Receive map.
+
     RTT::FlowStatus ret = receiveEnvireData();
     if (ret == RTT::NoData || ret == RTT::OldData || !traversability) {
         return;
-    }
+    } 
 
     envire::TraversabilityGrid::ArrayType& trav_array = traversability->getGridData();
     
@@ -73,6 +78,7 @@ void Task::updateHook()
     if(xi <= 1 || yi <= 1) {return;}
     
     std::cout << "received travMap with cellSize x/y :    " << xi << "  " << yi << ",    initialized???    " << initialized << std::endl;
+
     struct GridPoint point;
     
     if(!initialized)
@@ -103,7 +109,7 @@ void Task::updateHook()
         initialized = true;
         std::cout << "Planner init complete" << std::endl;
     }
-    {
+    //{
         if(ret == RTT::NewData)
         {
             //update obstacles
@@ -122,10 +128,9 @@ void Task::updateHook()
                 }
             }
             planner.setCoverageMap(obstacles, 1);
+            std::cout << "Updated obstacles" << std::endl;
         }
-        std::cout << "Updated obstacles" << std::endl;
-
-    }
+    //}
 
     ret = RTT::NoData;
     base::samples::RigidBodyState robotPose;
@@ -248,21 +253,24 @@ void Task::cleanupHook()
 RTT::FlowStatus Task::receiveEnvireData()
 {
     envire::OrocosEmitter::Ptr binary_event;
+    //RTT::FlowStatus ret = RTT::NoData;
     RTT::FlowStatus ret = mTraversabilityMapStatus;
-
     while(_envire_environment_in.read(binary_event) == RTT::NewData)
     {
         ret = RTT::NewData;
+        //RTT::log(RTT::Warning) << "NewData in receiveEnvireData: " << ret << RTT::endlog();
         mEnv->applyEvents(*binary_event);
     }
 
     if ((ret == RTT::NoData) || (ret == RTT::OldData))
     {
+        //RTT::log(RTT::Warning) << "NoData in receiveEnvireData: " << ret << RTT::endlog();
         return ret;
     }
     
     // Extracts data and adds it to the planner. 
     if(!extractTraversability()) {
+        RTT::log(RTT::Warning) << "Extracting traversability failed" << RTT::endlog();
         return mTraversabilityMapStatus;
     }
 
@@ -277,13 +285,14 @@ bool Task::extractTraversability() {
     // Lists all received traversability maps.
     std::stringstream ss;
     if(maps.size()) {
-        ss << "Received traversability map(s): " << std::endl;
-
+        //ss used for output strings
+        std::cout << "Received traversability map(s): " << std::endl;
+/////
         std::string trav_map_id;
         std::vector<envire::TraversabilityGrid*>::iterator it = maps.begin();
         for(int i=0; it != maps.end(); ++it, ++i)
         {
-            ss << i << ": " << (*it)->getUniqueId() << std::endl;
+            std::cout << i << ": " << (*it)->getUniqueId() << std::endl;
         }
         RTT::log(RTT::Info) << ss.str() << RTT::endlog(); 
     } else {
