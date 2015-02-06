@@ -69,7 +69,6 @@ void Task::updateHook()
     if(initialized)
     {
         updateMap();
-        if(_explore_map.connected())
         flushMap();
     }
 
@@ -336,6 +335,4 @@ bool Task::flushMap()
         envire::OrocosEmitter emitter(&tr, _explore_map);
         emitter.setTime(base::Time::now());
         emitter.flush(); 
-        
-        delete exploreMap;
 }
