@@ -141,6 +141,8 @@ void Task::updateHook()
     
     if(updateMap() == RTT::NoData)
         return;
+    
+    this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size());
 
     PointList frontiers;
     //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
@@ -335,4 +337,5 @@ bool Task::flushMap()
         envire::OrocosEmitter emitter(&tr, _explore_map);
         emitter.setTime(base::Time::now());
         emitter.flush(); 
+        return true;
 }
