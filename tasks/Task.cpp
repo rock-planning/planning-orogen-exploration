@@ -3,7 +3,7 @@
 #include "Task.hpp"
 #include "../../../../install/include/envire/maps/TraversabilityGrid.hpp"
 #include <envire/operators/SimpleTraversability.hpp>
-#define OBSTACLE_DRIVABILITY 0.1
+#define OBSTACLE_DRIVABILITY 0.0
 
 using namespace exploration;
 
@@ -84,7 +84,7 @@ void Task::updateHook()
     
     if(xi <= 1 || yi <= 1) {return;}
     
-    std::cout << "received travMap with cellSize x/y :    " << xi << "  " << yi << ",    initialized???    " << initialized << std::endl;
+//     std::cout << "received travMap with cellSize x/y :    " << xi << "  " << yi << std::endl;
 
     struct GridPoint point;
     
@@ -100,7 +100,8 @@ void Task::updateHook()
                 //std::cout << "INITIALIZING: value at point in ORIGINAL travData" << point.x << "/" << point.y << " is     " << (int)trav_array[y][x] << std::endl;
                 for(int i = 0; i < traversability->getTraversabilityClasses().size(); i++)
                 {
-                    if(i == trav_array[y][x] && traversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY)  
+                    if(i == trav_array[y][x] && traversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY 
+                        && traversability->getProbability(x,y) >= 0.99)  
                     { 
                         value = 1;
                         cnt++;
@@ -146,24 +147,25 @@ void Task::updateHook()
 
     PointList frontiers;
     //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
+    //exploration::Pose goalPose = planner.getCoverageTarget(pose); 
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
-    
-        exploration::Pose goalPose = planner.getCoverageTarget(pose); 
-        //std::cout << "Goal Pose:   " << goalPose.x << "/" << goalPose.y << std::endl;
-    
 
     for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr;
             double y_tr;
             //goals_tmp;
-            traversability->fromGrid(goalPose.x, goalPose.y, x_tr, y_tr);
+            traversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
+            //traversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
             //std::cout << "Frontier Count:  " <<  planner.getFrontierCellCount() << std::endl;
             goals.push_back(base::Vector3d(x_tr, y_tr, 0));
         }
     }
     
-    _goals_out.write(goals);
+    exploration::Pose realPose; realPose.x = robotPose.position.x(); realPose.y = robotPose.position.y();
+    std::vector<base::Vector3d> finGoals = planner.getCheapest(goals, realPose);
+    
+    _goals_out.write(finGoals);
 
 }
 void Task::errorHook()
@@ -188,13 +190,11 @@ RTT::FlowStatus Task::receiveEnvireData()
     while(_envire_environment_in.read(binary_event) == RTT::NewData)
     {
         ret = RTT::NewData;
-        //RTT::log(RTT::Warning) << "NewData in receiveEnvireData: " << ret << RTT::endlog();
         mEnv->applyEvents(*binary_event);
     }
 
     if ((ret == RTT::NoData) || (ret == RTT::OldData))
     {
-        //RTT::log(RTT::Warning) << "NoData in receiveEnvireData: " << ret << RTT::endlog();
         return ret;
     }
     
@@ -237,7 +237,7 @@ bool Task::extractTraversability() {
     {
         RTT::log(RTT::Info) << "No traversability map with id" << _traversability_map_id.get() << RTT::endlog();
         if(maps.size() > 1) {
-            RTT::log(RTT::Warning) << "The environment contains more than one traversability map, please specify the map ID" << RTT::endlog();
+            RTT::log(RTT::Warning) << "The environment contains more    than one traversability map, please specify the map ID" << RTT::endlog();
             return false;
         } else {
             RTT::log(RTT::Info) << "The only given traversability map will be used" << RTT::endlog();
@@ -260,19 +260,19 @@ bool Task::extractTraversability() {
 RTT::FlowStatus Task::updateMap()
 {
     RTT::FlowStatus ret = RTT::NoData;
-    base::samples::RigidBodyState robotPose;
     while(_pose_samples.read(robotPose, true) == RTT::NewData)
     {
         ret = RTT::NewData;
         this->pose.theta = robotPose.getYaw();
+//         std::cout << "robot.getYaw is: " << this->pose.theta << std::endl;
         size_t x, y;
 
         if(this->traversability->toGrid(robotPose.position, x, y, this->traversability->getFrameNode()))
         {
-            std::cout << "Adding Re4ading" << std::endl;
+            //std::cout << "Adding Re4ading" << std::endl;
             this->pose.x = x;
             this->pose.y = y;
-            std::cout << "transformed position: " << x << "/" << y <<std::endl;
+            //std::cout << "transformed position: " << x << "/" << y <<std::endl;
             this->planner.addReading(pose);
         }
     }
@@ -281,7 +281,7 @@ RTT::FlowStatus Task::updateMap()
 
 bool Task::flushMap()
 {
-        std::cout << "Outputting new map" << std::endl;
+        //std::cout << "Outputting new map" << std::endl;
         envire::Environment tr;
         envire::TraversabilityGrid *exploreMap = new envire::TraversabilityGrid(traversability->getWidth(), traversability->getHeight(), traversability->getScaleX(), traversability->getScaleY(), traversability->getOffsetX(), traversability->getOffsetY());
 
@@ -300,7 +300,7 @@ bool Task::flushMap()
         
         size_t xiExplo = traversability->getCellSizeX();
         size_t yiExplo = traversability->getCellSizeY();
-        std::cout << "Output map size " << xiExplo << " " << yiExplo << std::endl;
+        //std::cout << "Output map size " << xiExplo << " " << yiExplo << std::endl;
         struct GridPoint pointExplo;
         
         for(size_t y = 0; y < yiExplo; y++){

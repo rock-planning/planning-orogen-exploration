@@ -47,7 +47,12 @@ namespace exploration {
         RTT::FlowStatus updateMap();
         bool flushMap();
         bool initialized;
+        /** robotposition tranformed to the exploramap-grid **/
         exploration::Pose pose;
+        /** robotpose in world-coordinates **/
+        base::samples::RigidBodyState robotPose;
+        bool inObstacle;
+        
         public:
         /** TaskContext constructor for Task
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
