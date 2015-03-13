@@ -18,7 +18,7 @@ task_context "Task" do
     input_port('envire_environment_in', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Traversability map. Has to be received once")
 
-    output_port('goals_out', 'std/vector<base/Vector3d>').
+    output_port('goals_out', 'std/vector<base/samples/RigidBodyState>').
         doc "Calculated goal, using x and y"
 
     input_port("pose_samples", "base/samples/RigidBodyState").

@@ -149,8 +149,11 @@ void Task::updateHook()
     //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
     //exploration::Pose goalPose = planner.getCoverageTarget(pose); 
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
+    std::cout << "Number of Frontiers: " << goals_tmp.size() << std::endl;
+    int front = 1;
 
     for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
+        std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr;
             double y_tr;
@@ -160,10 +163,11 @@ void Task::updateHook()
             //std::cout << "Frontier Count:  " <<  planner.getFrontierCellCount() << std::endl;
             goals.push_back(base::Vector3d(x_tr, y_tr, 0));
         }
+        front ++;
     }
-    
+    std::cout << "size of vector given to getCheapest: " << goals.size() << std::endl; 
     exploration::Pose realPose; realPose.x = robotPose.position.x(); realPose.y = robotPose.position.y();
-    std::vector<base::Vector3d> finGoals = planner.getCheapest(goals, realPose);
+    std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, realPose);
     
     _goals_out.write(finGoals);
 
