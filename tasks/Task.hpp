@@ -44,14 +44,18 @@ namespace exploration {
         std::vector<base::Vector3d> goals;
         bool extractTraversability();
         bool extractMLS();
+        //reveales areas that have been seen now
         RTT::FlowStatus updateMap();
-        bool flushMap();
+        //dumps the map on debugport
+        bool flushMap();        
         bool initialized;
         /** robotposition tranformed to the exploramap-grid **/
         exploration::Pose pose;
         /** robotpose in world-coordinates **/
         base::samples::RigidBodyState robotPose;
         bool inObstacle;
+        
+        enum DrivabilityClasses { OBSTACLE = 5, EXPLORED, UNKNOWN };
         
         public:
         /** TaskContext constructor for Task

@@ -98,7 +98,7 @@ void Task::updateHook()
                 point.x = x;
                 char value = 0;
                 //std::cout << "INITIALIZING: value at point in ORIGINAL travData" << point.x << "/" << point.y << " is     " << (int)trav_array[y][x] << std::endl;
-                for(int i = 0; i < traversability->getTraversabilityClasses().size(); i++)
+                for(unsigned int i = 0; i < traversability->getTraversabilityClasses().size(); i++)
                 {
                     if(i == trav_array[y][x] && traversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY 
                         && traversability->getProbability(x,y) >= 0.99)  
@@ -111,49 +111,60 @@ void Task::updateHook()
                 map.setData(point, value);
             }
         }
-        
+        //initializing internal coverageMap
         planner.initCoverageMap(&map);
+        //initializing map which is going to be dumped on port
+         
+        
+        
         std::cout << "Obstacle cnt " << cnt << std::endl;
         initialized = true;
         std::cout << "Planner init complete" << std::endl;
+        
     }
-    //{
         if(ret == RTT::NewData)
         {
             //update obstacles
             PointList obstacles;
+            PointList obstacleToUnknown;
+            bool isObstacle;
             const GridMap &map = planner.getCoverageMap();
         
             for(size_t y = 0; y < yi; y++){
                 point.y = y;
                 for (size_t x = 0; x < xi; x++){
                     point.x = x;
-                    for(int i = 0; i < traversability->getTraversabilityClasses().size(); i++)
+                    isObstacle = false;
+                    for(unsigned int i = 0; i < traversability->getTraversabilityClasses().size(); i++)
                     {
                         if(i == trav_array[y][x] && traversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY)  
-                        {obstacles.push_back(point);}
+                        {obstacles.push_back(point); isObstacle = true; break;}
+                    }
+                    if(!isObstacle && map.getData(point) == -1)
+                    {
+                        obstacleToUnknown.push_back(point);
                     }
                 }
             }
             planner.setCoverageMap(obstacles, 1);
+            planner.setCoverageMap(obstacleToUnknown, -1);
             std::cout << "Updated obstacles" << std::endl;
         }
-    //}
+    this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size());
     
     if(updateMap() == RTT::NoData)
         return;
     
-    this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size());
 
     PointList frontiers;
     //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
     //exploration::Pose goalPose = planner.getCoverageTarget(pose); 
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
-    std::cout << "Number of Frontiers: " << goals_tmp.size() << std::endl;
+    //std::cout << "Number of Frontiers: " << goals_tmp.size() << std::endl;
     int front = 1;
 
     for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
-        std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
+        //std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr;
             double y_tr;
@@ -165,7 +176,7 @@ void Task::updateHook()
         }
         front ++;
     }
-    std::cout << "size of vector given to getCheapest: " << goals.size() << std::endl; 
+    
     exploration::Pose realPose; realPose.x = robotPose.position.x(); realPose.y = robotPose.position.y();
     std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, realPose);
     
@@ -287,15 +298,12 @@ bool Task::flushMap()
 {
         //std::cout << "Outputting new map" << std::endl;
         envire::Environment tr;
+        //initializing exploreMap that is going to be dumped
         envire::TraversabilityGrid *exploreMap = new envire::TraversabilityGrid(traversability->getWidth(), traversability->getHeight(), traversability->getScaleX(), traversability->getScaleY(), traversability->getOffsetX(), traversability->getOffsetY());
-
-        envire::TraversabilityClass obstacle(0.0);
-        envire::TraversabilityClass explored(1.0);
-        envire::TraversabilityClass unknown(0.5);
-        exploreMap->setTraversabilityClass(5, obstacle);
-        exploreMap->setTraversabilityClass(6, explored);
-        exploreMap->setTraversabilityClass(7, unknown);
-         
+        exploreMap->setTraversabilityClass(OBSTACLE, envire::TraversabilityClass (0.0)); //obstacle
+        exploreMap->setTraversabilityClass(EXPLORED, envire::TraversabilityClass (1.0)); //explored
+        exploreMap->setTraversabilityClass(UNKNOWN, envire::TraversabilityClass (0.5)); //unknown
+        
         envire::FrameNode *fr = new envire::FrameNode(traversability->getFrameNode()->getTransform());
         
         envire::TraversabilityGrid::ArrayType& exp_array = exploreMap->getGridData();
@@ -304,7 +312,7 @@ bool Task::flushMap()
         
         size_t xiExplo = traversability->getCellSizeX();
         size_t yiExplo = traversability->getCellSizeY();
-        //std::cout << "Output map size " << xiExplo << " " << yiExplo << std::endl;
+//      std::cout << "Output map size " << xiExplo << " " << yiExplo << std::endl;
         struct GridPoint pointExplo;
         
         for(size_t y = 0; y < yiExplo; y++){
