@@ -140,7 +140,7 @@ void Task::updateHook()
                         if(i == trav_array[y][x] && traversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY)  
                         {obstacles.push_back(point); isObstacle = true; break;}
                     }
-                    if(!isObstacle && map.getData(point) == -1)
+                    if(!isObstacle && map.getData(point) == 1)
                     {
                         obstacleToUnknown.push_back(point);
                     }
