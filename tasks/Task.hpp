@@ -55,7 +55,7 @@ namespace exploration {
         base::samples::RigidBodyState robotPose;
         bool inObstacle;
         
-        enum DrivabilityClasses { OBSTACLE = 5, EXPLORED, UNKNOWN };
+        enum DrivabilityClasses { OBSTACLE = 2, EXPLORED, UNKNOWN };
         
         public:
         /** TaskContext constructor for Task
