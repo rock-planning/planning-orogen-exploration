@@ -48,12 +48,14 @@ namespace exploration {
         RTT::FlowStatus updateMap();
         //dumps the map on debugport
         bool flushMap();        
+        // generates the goals
+        void generateGoals();
         bool initialized;
         /** robotposition tranformed to the exploramap-grid **/
         exploration::Pose pose;
         /** robotpose in world-coordinates **/
         base::samples::RigidBodyState robotPose;
-        bool inObstacle;
+        bool triggered = false;
         
         enum DrivabilityClasses { OBSTACLE = 2, EXPLORED, UNKNOWN };
         

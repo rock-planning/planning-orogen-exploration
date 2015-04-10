@@ -14,6 +14,9 @@ task_context "Task" do
 
     property("traversability_map_id", "std/string", "/traversability").
     doc("Try to extract this traversability map, otherwise the first traversability map will be used (if it is the only one)")
+    
+    input_port('calculate_goals_trigger', 'bool').
+        doc("If triggered, task calculates goalPoses and dumps them on port")
 
     input_port('envire_environment_in', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Traversability map. Has to be received once")
@@ -28,6 +31,6 @@ task_context "Task" do
     output_port('explore_map', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Debug port, gives the current explored map as envire::Traversability map")
 
-    #port_driven 'envire_environment_in', 'pose_samples'
-    periodic(1.0)
+    port_driven 'envire_environment_in', 'pose_samples', 'calculate_goals_trigger'
+    #periodic(1.0)
 end

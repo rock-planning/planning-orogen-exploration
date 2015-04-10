@@ -71,6 +71,7 @@ void Task::updateHook()
     {
         updateMap();
         flushMap();
+        generateGoals();
     }
 
     RTT::FlowStatus ret = receiveEnvireData();
@@ -193,49 +194,7 @@ void Task::updateHook()
         std::cout << "Updated obstacles" << std::endl;
     }
     
-    this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size());
     
-    if(updateMap() == RTT::NoData)
-    {
-        std::cout << "no new poseData" << std::endl;
-    }
-    
-
-    PointList frontiers;
-    //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
-    //exploration::Pose goalPose = planner.getCoverageTarget(pose); 
-    FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
-    //std::cout << "Number of Frontiers: " << goals_tmp.size() << std::endl;
-    int front = 1;
-
-    for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
-        //std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
-      for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
-            double x_tr, y_tr;
-            base::Pose2D bla;
-            
-            planner.mTraversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
-            bla.position = base::Vector2d(x_tr, y_tr);
-            //check if point is too close to obstacle. box is set in confirguration-file
-            try
-            {
-                if(planner.mTraversability->getWorstTraversabilityClassInRectangle(bla , 1.0, 1.0).getDrivability() > OBSTACLE_DRIVABILITY)
-                {
-                    goals.push_back(base::Vector3d(x_tr, y_tr, 0));
-                }
-            } 
-            catch (...) 
-            {
-                goals.push_back(base::Vector3d(x_tr, y_tr, 0));
-            }
-        }
-        front ++;
-    }
-    
-    exploration::Pose realPose; realPose.x = robotPose.position.x(); realPose.y = robotPose.position.y();
-    std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, realPose);
-    
-    _goals_out.write(finGoals);
 
 }
 void Task::errorHook()
@@ -405,3 +364,58 @@ bool Task::flushMap()
         emitter.flush(); 
         return true;
 }
+
+void Task::generateGoals()
+{
+this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size());
+    
+    if(_calculate_goals_trigger.read(triggered, false) == RTT::NoData || !triggered)
+    {
+        return;
+    }/*
+    else {return;}
+        if(!triggered)*/
+    
+    std::cout << "triggered goalPose-calculation!!" << std::endl;
+    
+
+    PointList frontiers;
+    //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
+    //exploration::Pose goalPose = planner.getCoverageTarget(pose); 
+    FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
+    //std::cout << "Number of Frontiers: " << goals_tmp.size() << std::endl;
+    int front = 1;
+
+    for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
+        //std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
+      for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
+            double x_tr, y_tr;
+            base::Pose2D bla;
+            
+            planner.mTraversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
+            bla.position = base::Vector2d(x_tr, y_tr);
+            //check if point is too close to obstacle. box is set in confirguration-file
+            try
+            {
+                if(planner.mTraversability->getWorstTraversabilityClassInRectangle(bla , 1.0, 1.0).getDrivability() > OBSTACLE_DRIVABILITY)
+                {
+                    goals.push_back(base::Vector3d(x_tr, y_tr, 0));
+                }
+            } 
+            catch (std::runtime_error &e) 
+            {
+//                 goals.push_back(base::Vector3d(x_tr, y_tr, 0));
+                continue;
+            }
+        }
+        front ++;
+    }
+    
+    //copy of robotPose should not be necessary
+    base::samples::RigidBodyState robotStateCopy = robotPose;
+    std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, robotStateCopy);
+    
+    triggered = false;
+    _goals_out.write(finGoals);
+}
+
