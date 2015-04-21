@@ -49,14 +49,20 @@ bool Task::startHook()
     planner = Planner();
     
     //Add fake camera looking forward
-    Polygon poly;
-    FloatPoint p;
-    p.x =  20; p.y = 20; poly.push_back(p);
-    p.x =  -20; p.y = 20; poly.push_back(p);
-    p.x =  -20; p.y = -20; poly.push_back(p);
-    p.x =  20; p.y =  -20; poly.push_back(p);
-    p.x =  20; p.y =  20; poly.push_back(p);
-    planner.addSensor(poly); 
+    
+    std::vector<ConfPolygon> polys = _polygons;
+    std::vector<ConfPolygon>::iterator polygon; std::vector<FloatPoint>::iterator currPoint;
+    for(polygon = polys.begin(); polygon < polys.end(); polygon++ )
+    {
+        Polygon polyToRender;
+        for(currPoint = polygon->points.begin(); currPoint < polygon->points.end(); currPoint++)
+        {
+            polyToRender.push_back(*currPoint);
+        }
+        planner.addSensor(polyToRender);
+    }
+    
+    planner.setMinGoalDistance(_min_goal_distance);
     
     initialized = false;
     
@@ -372,9 +378,7 @@ this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size())
     if(_calculate_goals_trigger.read(triggered, false) == RTT::NoData || !triggered)
     {
         return;
-    }/*
-    else {return;}
-        if(!triggered)*/
+    }
     
     std::cout << "triggered goalPose-calculation!!" << std::endl;
     

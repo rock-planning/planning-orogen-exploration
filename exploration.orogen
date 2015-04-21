@@ -5,15 +5,22 @@ using_library "envire"
 using_library "exploration"
 import_types_from 'base'
 import_types_from 'envire'
+import_types_from "exploration/ExplorationPlannerTypes.hpp"
 import_types_from "explorationTypes.hpp"
 
 import_types_from "base"
-
+    
 task_context "Task" do
     needs_configuration
 
     property("traversability_map_id", "std/string", "/traversability").
     doc("Try to extract this traversability map, otherwise the first traversability map will be used (if it is the only one)")
+    
+    property("polygons", "/std/vector<exploration/ConfPolygon>").
+    doc("List of polygons that represents the robot's view")
+    
+    property("min_goal_distance", "double", 1.0)
+    doc("Since some planners don't work very well with goalPoses too close to the robot's pose, a minimal goalDistance (in m) can be set. Goals that are not satisfying this condition will be thrown out.")
     
     input_port('calculate_goals_trigger', 'bool').
         doc("If triggered, task calculates goalPoses and dumps them on port")
