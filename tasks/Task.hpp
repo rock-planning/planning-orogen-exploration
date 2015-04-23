@@ -40,6 +40,10 @@ namespace exploration {
         RTT::FlowStatus mTraversabilityMapStatus;
         RTT::FlowStatus receiveEnvireData();
         envire::TraversabilityGrid* traversability;
+        envire::FrameNode* lastTraversabilityFrameNode;
+        double lastOffsetX;
+        double lastOffsetY;
+        
         base::samples::RigidBodyState start_vec;
         std::vector<base::Vector3d> goals;
         bool extractTraversability();

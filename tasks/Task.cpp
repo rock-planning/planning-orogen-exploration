@@ -136,7 +136,10 @@ void Task::updateHook()
         }
         //initializing internal coverageMap
         planner.initCoverageMap(&map);
-        
+ 
+        lastTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
+        lastOffsetX = planner.mTraversability->getOffsetX();
+        lastOffsetY = planner.mTraversability->getOffsetY();
         
         std::cout << "Obstacle cnt " << cnt << std::endl;
         initialized = true;
@@ -148,6 +151,7 @@ void Task::updateHook()
      */
     else if(initialized && (xi>planner.getCoverageMap().getWidth() || yi>planner.getCoverageMap().getHeight()))
     {
+	/*
         //transfer current coverage map into a travgrid so it can be transformed with ease
         envire::TraversabilityGrid* currentMap = planner.coverageMapToTravGrid(planner.getCoverageMap(), *oldTraversabilityGrid);
         //create frameNode with the transformation of the old frameNode
@@ -155,6 +159,8 @@ void Task::updateHook()
         envire::FrameNode* lastTraversabilityFrameNode = new envire::FrameNode(oldTraversabilityGrid->getFrameNode()->getTransform());
         
         envire::Environment tr;
+	*/
+        envire::Transform oldToNew = lastTraversabilityFrameNode->getTransform().inverse() * planner.mTraversability->getFrameNode()->getTransform();
         
         int deltaX = (xi - planner.getCoverageMap().getWidth())/2;
         int deltaY = (yi - planner.getCoverageMap().getHeight())/2;
@@ -162,6 +168,10 @@ void Task::updateHook()
         for(size_t y = 0; y < yi; y++){
             point.y = y;
             for (size_t x = 0; x < xi; x++){
+                Eigen::Vector3d pOld(x * planner.mTraversability->getScaleX() + lastOffsetX  * planner.mTraversability->getScaleY(), y + lastOffsetY, 0);
+                
+                Eigen::Vector3d pNew = oldToNew * pOld;
+                pNew = Eigen::Vector3d(pNew.x() / planner.mTraversability->getScaleX() - planner.mTraversability->getOffsetX(), pNew.y() / planner.mTraversability->getScaleY() - planner.mTraversability->getOffsetY(), 0);
                 point.x = x;
                 //return -1 if point is outOfBounds
                 int value = planner.getCoverageMap().getData(point);
@@ -172,8 +182,8 @@ void Task::updateHook()
                 if(value == 0)
                 {
                      exploration::GridPoint offsetPoint;
-                     offsetPoint.x = point.x + deltaX;
-                     offsetPoint.y = point.y + deltaY;
+                     offsetPoint.x = pNew.x();
+                     offsetPoint.y = pNew.y();
                      map.setData(offsetPoint, value);
                 } 
                 else {
@@ -182,6 +192,9 @@ void Task::updateHook()
             }
         }
         planner.initCoverageMap(&map);
+        lastTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
+        lastOffsetX = planner.mTraversability->getOffsetX();
+        lastOffsetY = planner.mTraversability->getOffsetY();
     }
     
     if(ret == RTT::NewData)
@@ -302,7 +315,7 @@ bool Task::extractTraversability() {
             } 
         }
     } 
-
+    
     RTT::log(RTT::Info) << "Traversability map " << planner.mTraversability->getUniqueId() << " extracted" << RTT::endlog();
 
     return true;
