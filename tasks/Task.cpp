@@ -69,6 +69,11 @@ bool Task::startHook()
     return true;
 }
 
+void Task::calculateGoals()
+{
+    triggered = true;
+}
+
 void Task::updateHook()
 {   TaskBase::updateHook();
     
@@ -373,12 +378,13 @@ bool Task::flushMap()
 
 void Task::generateGoals()
 {
-this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size());
-    
-    if(_calculate_goals_trigger.read(triggered, false) == RTT::NoData || !triggered)
+    goals.clear();
+
+    if(!triggered)
     {
         return;
     }
+    
     
     std::cout << "triggered goalPose-calculation!!" << std::endl;
     

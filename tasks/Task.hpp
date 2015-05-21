@@ -77,6 +77,8 @@ namespace exploration {
         */
         ~Task();
 
+        virtual void calculateGoals();
+        
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the
          * component will stay in PreOperational. Otherwise, it goes into
