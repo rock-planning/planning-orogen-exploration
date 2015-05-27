@@ -35,6 +35,7 @@ bool Task::configureHook()
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
+    triggered = false;
     _goals_out.keepLastWrittenValue(false);
     return true;
 }
@@ -80,6 +81,7 @@ void Task::updateHook()
         generateGoals();
     }
 
+    envire::TraversabilityGrid* oldTraversabilityGrid = planner.mTraversability;
     RTT::FlowStatus ret = receiveEnvireData();
     if (ret == RTT::NoData || ret == RTT::OldData || !planner.mTraversability) {
         return;
@@ -141,6 +143,14 @@ void Task::updateHook()
      */
     else if(initialized && (xi>planner.getCoverageMap().getWidth() || yi>planner.getCoverageMap().getHeight()))
     {
+        //transfer current coverage map into a travgrid so it can be transformed with ease
+        envire::TraversabilityGrid* currentMap = planner.coverageMapToTravGrid(planner.getCoverageMap(), *oldTraversabilityGrid);
+        //create frameNode with the transformation of the old frameNode
+        envire::FrameNode* currentTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
+        envire::FrameNode* lastTraversabilityFrameNode = new envire::FrameNode(oldTraversabilityGrid->getFrameNode()->getTransform());
+        
+        envire::Environment tr;
+        
         int deltaX = (xi - planner.getCoverageMap().getWidth())/2;
         int deltaY = (yi - planner.getCoverageMap().getHeight())/2;
         GridMap map((int)xi, (int)yi);
@@ -150,7 +160,8 @@ void Task::updateHook()
                 point.x = x;
                 //return -1 if point is outOfBounds
                 int value = planner.getCoverageMap().getData(point);
-                /*explored points need to be set with an offset since those values originate from a smaller array
+                /*
+                 * explored points need to be set with an offset since those values originate from a smaller array
                  * NOT TESTED YET!!
                  */
                 if(value == 0)
@@ -310,55 +321,18 @@ RTT::FlowStatus Task::updateMap()
             this->planner.addReading(pose);
         }
     }
-    return ret;
+    return ret; 
 }
 
 bool Task::flushMap()
 {
         //std::cout << "Outputting new map" << std::endl;
         envire::Environment tr;
-        //initializing exploreMap that is going to be dumped
-        envire::TraversabilityGrid *exploreMap = new envire::TraversabilityGrid(planner.mTraversability->getWidth(), planner.mTraversability->getHeight(), planner.mTraversability->getScaleX(), planner.mTraversability->getScaleY(), planner.mTraversability->getOffsetX(), planner.mTraversability->getOffsetY());
-        exploreMap->setTraversabilityClass(OBSTACLE, envire::TraversabilityClass (0.0)); //obstacle
-        exploreMap->setTraversabilityClass(EXPLORED, envire::TraversabilityClass (1.0)); //explored
-        exploreMap->setTraversabilityClass(UNKNOWN, envire::TraversabilityClass (0.5)); //unknown
+        
+        //generating exploreMap that is going to be dumped
+        envire::TraversabilityGrid* exploreMap = planner.coverageMapToTravGrid(planner.getCoverageMap(), *planner.mTraversability);
         
         envire::FrameNode *fr = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
-        
-        envire::TraversabilityGrid::ArrayType& exp_array = exploreMap->getGridData();
-        
-        const GridMap &map(planner.getCoverageMap());
-        
-        size_t xiExplo = planner.mTraversability->getCellSizeX();
-        size_t yiExplo = planner.mTraversability->getCellSizeY();
-//      std::cout << "Output map size " << xiExplo << " " << yiExplo << std::endl;
-        struct GridPoint pointExplo;
-        
-        for(size_t y = 0; y < yiExplo; y++){
-            pointExplo.y = y;
-            for (size_t x = 0; x < xiExplo; x++){
-                pointExplo.x = x;
-                int value = map.getData(pointExplo);
-                exploreMap->setProbability(1.0, x, y);
-                //std::cout << "value at OUTPUTMAP point " << pointExplo.x << "/" << pointExplo.y << " is     " << value << std::endl;
-                switch(value)
-                {
-                    case -1:
-                        exp_array[y][x] = UNKNOWN;
-                        break;
-                    case 0:
-                        exp_array[y][x] = EXPLORED;
-                        //std::cout << "explored, set status to " << (int)envire::SimpleTraversability::CUSTOM_CLASSES + 5 << std::endl;
-                        break;
-                    case 1:
-                        exp_array[y][x] = OBSTACLE;
-                        //std::cout << "OBSTACLE, set status to " << (int)envire::SimpleTraversability::CLASS_OBSTACLE << std::endl;
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
 
         tr.getRootNode()->addChild(fr);
         tr.attachItem(exploreMap, fr);
@@ -422,4 +396,5 @@ this->goals.erase(this->goals.begin(), this->goals.begin() + this->goals.size())
     triggered = false;
     _goals_out.write(finGoals);
 }
+
 

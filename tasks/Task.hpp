@@ -55,7 +55,7 @@ namespace exploration {
         exploration::Pose pose;
         /** robotpose in world-coordinates **/
         base::samples::RigidBodyState robotPose;
-        bool triggered = false;
+        bool triggered;
         
         enum DrivabilityClasses { OBSTACLE = 2, EXPLORED, UNKNOWN };
         
