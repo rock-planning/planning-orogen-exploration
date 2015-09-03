@@ -339,21 +339,17 @@ void Task::generateGoals()
     }
 
     PointList frontiers;
-    //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
-    //exploration::Pose goalPose = planner.getCoverageTarget(pose); 
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
-    //std::cout << "Number of Frontiers: " << goals_tmp.size() << std::endl;
     int front = 1;
 
     for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
-        //std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr, y_tr;
             base::Pose2D pose_local;
             
             planner.mTraversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
             pose_local.position = base::Vector2d(x_tr, y_tr);
-            //check if point is too close to obstacle. box is set in configuration-file
+            // Check if the goal point lies too close to obstacle using the width/lenght of the robot.
             try
             {
                 if(planner.mTraversability->getWorstTraversabilityClassInRectangle
