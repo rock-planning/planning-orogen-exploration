@@ -79,109 +79,93 @@ void Task::updateHook()
     }
 
     // Go on if a new map has been received.
-    envire::TraversabilityGrid* oldTraversabilityGrid = planner.mTraversability;
     RTT::FlowStatus ret = receiveEnvireData();
     if (ret == RTT::NoData || ret == RTT::OldData || !planner.mTraversability) {
         return;
     } 
     envire::TraversabilityGrid::ArrayType& trav_array = planner.mTraversability->getGridData();
-    size_t cell_size_x = planner.mTraversability->getCellSizeX();
-    size_t cell_size_y = planner.mTraversability->getCellSizeY();
+    size_t new_cell_size_x = planner.mTraversability->getCellSizeX();
+    size_t new_cell_size_y = planner.mTraversability->getCellSizeY();
+    double new_offset_x = planner.mTraversability->getOffsetX();
+    double new_offset_y = planner.mTraversability->getOffsetY();
+    double new_scale_x = planner.mTraversability->getScaleX();
+    double new_scale_y = planner.mTraversability->getScaleY();
     
-    if(cell_size_x <= 1 || cell_size_y <= 1) {
+    if(new_cell_size_x <= 1 || new_cell_size_y <= 1) {
         LOG_WARN("Map with wrong cellsize (<=1) has been received.");
         return;
     }
     
+    // Create first exploration map.
     struct GridPoint point;
     if(!initialized)
     {
-        GridMap map((int)cell_size_x, (int)cell_size_y);
+        GridMap map((int)new_cell_size_x, (int)new_cell_size_y);
         int obstacle_cnt = 0;
-        for(size_t y = 0; y < cell_size_y; y++){
+        for(size_t y = 0; y < new_cell_size_y; y++){
             point.y = y;
-            for (size_t x = 0; x < cell_size_x; x++){
+            for (size_t x = 0; x < new_cell_size_x; x++){
                 point.x = x;
-                char value = -1;
-                //std::cout << "INITIALIZING: value at point in ORIGINAL travData" << point.x << "/" << point.y << " is     " << (int)trav_array[y][x] << std::endl;
+                char value = UNKNOWN;
                 
-                // planner.mTraversability->getTraversabilityClass(trav_array[y][x]).getDrivability() == 0 -> obstacle
-                
-                for(unsigned int i = 0; i < planner.mTraversability->getTraversabilityClasses().size(); i++)
-                {
-                    if(i == trav_array[y][x] && planner.mTraversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY 
-                        && planner.mTraversability->getProbability(x,y) >= 0.99)  
-                    { 
-                        value = 1;
-                        obstacle_cnt++;
-                        break;
-                    }
+                if(planner.mTraversability->getTraversabilityClass(trav_array[y][x]).getDrivability() <= OBSTACLE_DRIVABILITY)  
+                { 
+                    value = OBSTACLE;
+                    obstacle_cnt++;
                 }
                 map.setData(point, value);
             }
         }
-        //initializing internal coverageMap
+
         planner.initCoverageMap(&map);
- 
-        lastTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
-        lastOffsetX = planner.mTraversability->getOffsetX();
-        lastOffsetY = planner.mTraversability->getOffsetY();
-       
+    
         LOG_INFO("Planner initialization complete, obstacle count %d", obstacle_cnt);
         initialized = true;
         
     }
-
-    // Resize map if a bigger travGrid has been received.
-    else if(initialized && (cell_size_x > planner.getCoverageMap().getWidth() || 
-                            cell_size_y > planner.getCoverageMap().getHeight()))
+    // Resize map if a different traversability map has been received.
+    else if(new_cell_size_x != planner.getCoverageMap().getWidth() || 
+            new_cell_size_y != planner.getCoverageMap().getHeight() ||
+            new_offset_x != lastOffsetX ||
+            new_offset_y != lastOffsetY ||
+            new_scale_x != lastScaleX ||
+            new_scale_y != lastScaleY)
+            
     {
-        //transfer current coverage map into a travgrid so it can be transformed with ease
-        //envire::TraversabilityGrid* currentMap = planner.coverageMapToTravGrid(planner.getCoverageMap(), *oldTraversabilityGrid);
-        //create frameNode with the transformation of the old frameNode
-        //envire::FrameNode* currentTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
-        //envire::FrameNode* lastTraversabilityFrameNode = new envire::FrameNode(oldTraversabilityGrid->getFrameNode()->getTransform());
-        //envire::Environment tr;
-        
-        envire::Transform old_to_new = lastTraversabilityFrameNode->getTransform().inverse() * 
+        envire::Transform new_to_old = lastTraversabilityFrameNode->getTransform().inverse() * 
                 planner.mTraversability->getFrameNode()->getTransform();
-        
-        int deltaX = (cell_size_x - planner.getCoverageMap().getWidth())/2;
-        int deltaY = (cell_size_y - planner.getCoverageMap().getHeight())/2;
-        GridMap map((int)cell_size_x, (int)cell_size_y);
-        for(size_t y = 0; y < cell_size_y; y++){
-            point.y = y;
-            for (size_t x = 0; x < cell_size_x; x++){
-                Eigen::Vector3d p_old((x + lastOffsetX) * planner.mTraversability->getScaleX(), 
-                                      (y + lastOffsetY) * planner.mTraversability->getScaleY(), 0);
-                Eigen::Vector3d p_new = old_to_new * p_old;
-                p_new = Eigen::Vector3d(p_new.x() / planner.mTraversability->getScaleX() - planner.mTraversability->getOffsetX(), 
-                                        p_new.y() / planner.mTraversability->getScaleY() - planner.mTraversability->getOffsetY(), 0);
-                point.x = x;
-                //return -1 if point is outOfBounds
-                // TODO At the moment the old point is tested which cannot be 
-                int value = planner.getCoverageMap().getData(point);
-                /*
-                 * explored points need to be set with an offset since those values originate from a smaller array
-                 * NOT TESTED YET!!
-                 */
-                if(value == 0)
-                {
-                     exploration::GridPoint offsetPoint;
-                     offsetPoint.x = p_new.x();
-                     offsetPoint.y = p_new.y();
-                     map.setData(offsetPoint, value);
-                } 
-                else {
-                    map.setData(point, value);
-                 }
+
+        GridMap map((int)new_cell_size_x, (int)new_cell_size_y);
+        // Runs through new map and transforms each cell into the old map to get its value.
+        for(size_t y = 0; y < new_cell_size_y; y++){
+            for (size_t x = 0; x < new_cell_size_x; x++){
+                Eigen::Vector3d p_new(0,0,0);
+                // TODO fromGrid add shifts to the center of a cell (+0.5), problem?
+                planner.mTraversability->fromGrid(x, y, p_new[0], p_new[1]);
+                Eigen::Vector3d p_old = new_to_old * p_new;
+                Eigen::Vector3d p_old_grid = Eigen::Vector3d((p_old.x() - lastOffsetX) / lastScaleX, 
+                        (p_old.y() - lastOffsetY) / lastScaleY, 0);
+
+                GridPoint old_grid_point(p_old_grid[0], p_old_grid[1], 0);
+                GridPoint new_grid_point(x, y, 0);
+                char value_old_map = 0;
+                
+                // The coverage map within the planner still contains the old data.
+                if(planner.getCoverageMap().getData(old_grid_point, value_old_map)) {
+                    // Transfer old value if the according cell lies within the new map.
+                    map.setData(new_grid_point, value_old_map);       
+                }
             }
         }
         planner.initCoverageMap(&map);
-        lastTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
-        lastOffsetX = planner.mTraversability->getOffsetX();
-        lastOffsetY = planner.mTraversability->getOffsetY();
     }
+    
+    // Store new map informations.
+    lastTraversabilityFrameNode = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
+    lastOffsetX = planner.mTraversability->getOffsetX();
+    lastOffsetY = planner.mTraversability->getOffsetY();
+    lastScaleX = planner.mTraversability->getScaleX();
+    lastScaleY = planner.mTraversability->getScaleY();
     
     if(ret == RTT::NewData)
     {
@@ -190,44 +174,48 @@ void Task::updateHook()
         PointList obstacleToUnknown;
         bool isObstacle;
         const GridMap &map = planner.getCoverageMap();
+        char value = 0;
     
-        for(size_t y = 0; y < cell_size_y; y++){
+        for(size_t y = 0; y < new_cell_size_y; y++){
             point.y = y;
-            for (size_t x = 0; x < cell_size_x; x++){
+            for (size_t x = 0; x < new_cell_size_x; x++){
                 point.x = x;
                 isObstacle = false;
-                for(unsigned int i = 0; i < planner.mTraversability->getTraversabilityClasses().size(); i++)
+          
+                if(planner.mTraversability->getTraversabilityClass(trav_array[y][x]).getDrivability() <= OBSTACLE_DRIVABILITY ||
+                    (y == 0 || y == new_cell_size_y-1 || x == 0 || x == new_cell_size_x-1))  
                 {
-                    if((i == trav_array[y][x] && planner.mTraversability->getTraversabilityClass(i).getDrivability() <= OBSTACLE_DRIVABILITY) ||
-                        (y == 0 || y == cell_size_y-1 || x == 0 || x == cell_size_x-1))  
-                    {
-                        obstacles.push_back(point); isObstacle = true; break;
-                    }
+                    obstacles.push_back(point); 
+                    isObstacle = true; 
                 }
-                if(!isObstacle && map.getData(point) == 1)
+                
+                if(!isObstacle && map.getData(point, value) && value == OBSTACLE)
                 {
                     obstacleToUnknown.push_back(point);
                 }
             }
         }
-        planner.setCoverageMap(obstacles, 1);
-        planner.setCoverageMap(obstacleToUnknown, -1);
-        std::cout << "Updated obstacles" << std::endl;
+        planner.setCoverageMap(obstacles, OBSTACLE);
+        // TODO Why is the the cell set to UNKNOWN and not to EXPLORED?
+        planner.setCoverageMap(obstacleToUnknown, UNKNOWN);
+        LOG_INFO("Obstacles have been updated");
     }
 }
+
 void Task::errorHook()
 {
     TaskBase::errorHook();
 }
+
 void Task::stopHook()
 {
     TaskBase::stopHook();
 }
+
 void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
 }
-
 
 RTT::FlowStatus Task::receiveEnvireData()
 {
@@ -323,10 +311,9 @@ RTT::FlowStatus Task::updateMap()
 
 bool Task::flushMap()
 {
-    //std::cout << "Outputting new map" << std::endl;
     envire::Environment tr;
     
-    //generating exploreMap that is going to be dumped
+    // Generating exploreMap that is going to be dumped.
     envire::TraversabilityGrid* exploreMap = planner.coverageMapToTravGrid(planner.getCoverageMap(), *planner.mTraversability);
     
     envire::FrameNode *fr = new envire::FrameNode(planner.mTraversability->getFrameNode()->getTransform());
@@ -350,10 +337,6 @@ void Task::generateGoals()
     {
         return;
     }
-    
-    
-    std::cout << "triggered goalPose-calculation!!" << std::endl;
-    
 
     PointList frontiers;
     //std::cout << "Pose fuer getCoverageFrontiers: " << pose.x << "/" << pose.y << std::endl;
@@ -366,33 +349,31 @@ void Task::generateGoals()
         //std::cout << "Frontier number " << front << " has " << frIt->size() << " points" << std::endl; 
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr, y_tr;
-            base::Pose2D bla;
+            base::Pose2D pose_local;
             
             planner.mTraversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
-            bla.position = base::Vector2d(x_tr, y_tr);
-            //check if point is too close to obstacle. box is set in confirguration-file
+            pose_local.position = base::Vector2d(x_tr, y_tr);
+            //check if point is too close to obstacle. box is set in configuration-file
             try
             {
-                if(planner.mTraversability->getWorstTraversabilityClassInRectangle(bla , 1.0, 1.0).getDrivability() > OBSTACLE_DRIVABILITY)
+                if(planner.mTraversability->getWorstTraversabilityClassInRectangle
+                        (pose_local , _robot_length_x_m, _robot_width_y_m).getDrivability() > 
+                        OBSTACLE_DRIVABILITY)
                 {
                     goals.push_back(base::Vector3d(x_tr, y_tr, 0));
                 }
             } 
             catch (std::runtime_error &e) 
             {
-//                 goals.push_back(base::Vector3d(x_tr, y_tr, 0));
                 continue;
             }
         }
         front ++;
     }
     
-    //copy of robotPose should not be necessary
+    // Copy of robotPose should not be necessary.
     base::samples::RigidBodyState robotStateCopy = robotPose;
     std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, robotStateCopy);
-    
     triggered = false;
     _goals_out.write(finGoals);
 }
-
-

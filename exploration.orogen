@@ -19,8 +19,14 @@ task_context "Task" do
     property("polygons", "/std/vector<exploration/ConfPolygon>").
     doc("List of polygons that represents the robot's view")
     
-    property("min_goal_distance", "double", 1.0)
+    property("min_goal_distance", "double", 1.0).
     doc("Since some planners don't work very well with goalPoses too close to the robot's pose, a minimal goalDistance (in m) can be set. Goals that are not satisfying this condition will be thrown out.")
+    
+    property("robot_length_x_m", "double", 1.0).
+	doc("Length of the robot in meter")
+	
+	property("robot_width_y_m", "double", 1.0).
+    doc("Width of the robot in meter")
     
     input_port('envire_environment_in', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Traversability map. Has to be received once")

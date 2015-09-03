@@ -43,6 +43,9 @@ namespace exploration {
         envire::FrameNode* lastTraversabilityFrameNode;
         double lastOffsetX;
         double lastOffsetY;
+        double lastScaleX;
+        double lastScaleY;
+        
         
         base::samples::RigidBodyState start_vec;
         std::vector<base::Vector3d> goals;
@@ -60,8 +63,6 @@ namespace exploration {
         /** robotpose in world-coordinates **/
         base::samples::RigidBodyState robotPose;
         bool triggered;
-        
-        enum DrivabilityClasses { OBSTACLE = 2, EXPLORED, UNKNOWN };
         
         public:
         /** TaskContext constructor for Task
