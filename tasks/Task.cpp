@@ -340,36 +340,32 @@ void Task::generateGoals()
 
     PointList frontiers;
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
-    int front = 1;
+    for(int i=0; i<goals_tmp.size(); i++) {
+        std::cout << "Generates " << goals_tmp[i].size() << " frontier goals" << std::endl;
+    }
 
     for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr, y_tr;
-            base::Pose2D pose_local;
-            
             planner.mTraversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
-            pose_local.position = base::Vector2d(x_tr, y_tr);
-            // Check if the goal point lies too close to obstacle using the width/lenght of the robot.
-            try
-            {
-                if(planner.mTraversability->getWorstTraversabilityClassInRectangle
-                        (pose_local , _robot_length_x_m, _robot_width_y_m).getDrivability() > 
-                        OBSTACLE_DRIVABILITY)
-                {
-                    goals.push_back(base::Vector3d(x_tr, y_tr, 0));
-                }
-            } 
-            catch (std::runtime_error &e) 
-            {
-                continue;
-            }
+            goals.push_back(base::Vector3d(x_tr, y_tr, 0));
         }
-        front ++;
     }
     
     // Copy of robotPose should not be necessary.
     base::samples::RigidBodyState robotStateCopy = robotPose;
-    std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, robotStateCopy);
+    
+    // Find the best next local exploration pose. If the rectangle of the robot
+    // touches an obstacle, the obstacle will be ignored.
+    // The folloing value function is used:
+    // combinedRating = numberOfExploredCells / ((angularDistance+1) / robotToPointDistance);
+    // combinedRating /= worst_driveability
+    // If nothing new can be explored (numberOfExploredCells == 0) the exploration is over.
+    double robot_length = _robot_length_x_m.get();
+    double robot_width = _robot_width_y_m.get();
+    std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, 
+            robotStateCopy, true, robot_length, robot_width);
+    std::cout << "Got " << finGoals.size() << " final goals" << std::endl;
     triggered = false;
     _goals_out.write(finGoals);
 }
