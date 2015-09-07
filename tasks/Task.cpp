@@ -196,7 +196,6 @@ void Task::updateHook()
             }
         }
         planner.setCoverageMap(obstacles, OBSTACLE);
-        // TODO Why is the the cell set to UNKNOWN and not to EXPLORED?
         planner.setCoverageMap(obstacleToUnknown, UNKNOWN);
         LOG_INFO("Obstacles have been updated");
     }

@@ -28,6 +28,9 @@ task_context "Task" do
 	property("robot_width_y_m", "double", 1.0).
     doc("Width of the robot in meter")
     
+    operation("clearPlannerMap").
+        doc("Clears the internal exploration map. All obstacles will be readded by receiving the next trav map.")
+    
     input_port('envire_environment_in', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Traversability map. Has to be received once")
 

@@ -141,6 +141,10 @@ namespace exploration {
          * before calling start() again.
          */
         void cleanupHook();
+        
+        inline void clearPlannerMap() {
+            planner.clearCoverageMap();
+        }
     };
 }
 
