@@ -11,26 +11,27 @@ Orocos.initialize
 ENV['LANG'] = 'C'
 ENV['LC_NUMERIC'] = 'C'
 
-Orocos.run 'exploration::Task' => 'exploration', 'envire::SynchronizationTransmitter' => 'transmitter', 'traversability::Simple' => 'traversability', 
+#Orocos.run 'exploration::Task' => 'exploration',# 'envire::SynchronizationTransmitter' => 'transmitter', 'traversability::Simple' => 'traversability', 
         #:gdb=>true, :valgrind=>true,  
-        "wait" => 1000 do
+#        "wait" => 1000 do
         
     #Orocos.conf.load_dir("./config")
     
     # LOAD ENV AND CREATE TRAV
     # What is 'Orocos.name_service.get' instead of 'TaskContext::get'
-    transmitter = TaskContext::get 'transmitter'
+    #transmitter = TaskContext::get 'transmitter'
     ##transmitter.configure() ## not needed
-    transmitter.loadEnvironment("dlr.env")
-    transmitter.start()
+    #transmitter.loadEnvironment("dlr.env")
+    #transmitter.start()
 
-    traversability = TaskContext::get 'traversability'
+    #traversability = TaskContext::get 'traversability'
     #traversability.apply_conf(['default'])
-    traversability.configure()
-    traversability.start()
+    #traversability.configure()
+    #traversability.start()
     
     exploration = TaskContext::get 'exploration'
-    exploration.configure()
+    exploration.clearPlannerMap()
+    #exploration.configure()
     ##exploration.start()
     # CONNECT PORTS
 
@@ -46,6 +47,6 @@ Orocos.run 'exploration::Task' => 'exploration', 'envire::SynchronizationTransmi
     #while true
     #end
    
-    Readline::readline("Press ENTER to exit ...")
-end
+    #Readline::readline("Press ENTER to exit ...")
+#end
 
