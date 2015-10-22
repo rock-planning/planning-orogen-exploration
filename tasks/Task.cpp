@@ -68,13 +68,17 @@ void Task::calculateGoals()
 }
 
 void Task::updateHook()
-{   TaskBase::updateHook();
-    
+{   
+    triggered = true;
+
+    TaskBase::updateHook();
     // After a map has been received.
     if(initialized)
     {
         updateMap();
         flushMap();
+        // Generate goal will only produce goals if the operation
+        // 'calculateGoals' has been called previously.
         generateGoals();
     }
 
@@ -82,7 +86,8 @@ void Task::updateHook()
     RTT::FlowStatus ret = receiveEnvireData();
     if (ret == RTT::NoData || ret == RTT::OldData || !planner.mTraversability) {
         return;
-    } 
+    }
+    
     envire::TraversabilityGrid::ArrayType& trav_array = planner.mTraversability->getGridData();
     size_t new_cell_size_x = planner.mTraversability->getCellSizeX();
     size_t new_cell_size_y = planner.mTraversability->getCellSizeY();
@@ -367,4 +372,7 @@ void Task::generateGoals()
     std::cout << "Got " << finGoals.size() << " final goals" << std::endl;
     triggered = false;
     _goals_out.write(finGoals);
+    if(finGoals.size() > 0) {
+        _goal_out_best.write(finGoals[0]);
+    }
 }

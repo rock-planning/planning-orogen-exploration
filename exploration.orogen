@@ -36,6 +36,9 @@ task_context "Task" do
 
     output_port('goals_out', 'std/vector<base/samples/RigidBodyState>').
         doc "Calculated goal, using x and y"
+        
+    output_port('goal_out_best', 'base/samples/RigidBodyState').
+        doc("Just the first (best) goal of the goal_out list.")
 
     input_port("pose_samples", "base/samples/RigidBodyState").
         needs_reliable_connection.
