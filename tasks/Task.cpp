@@ -69,8 +69,6 @@ void Task::calculateGoals()
 
 void Task::updateHook()
 {   
-    triggered = true;
-
     TaskBase::updateHook();
     // After a map has been received.
     if(initialized)
