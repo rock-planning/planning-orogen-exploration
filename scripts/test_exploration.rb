@@ -11,9 +11,10 @@ Orocos.initialize
 ENV['LANG'] = 'C'
 ENV['LC_NUMERIC'] = 'C'
 
-#Orocos.run 'exploration::Task' => 'exploration',# 'envire::SynchronizationTransmitter' => 'transmitter', 'traversability::Simple' => 'traversability', 
+Orocos.run 'exploration::Task' => 'exploration',
+        # 'envire::SynchronizationTransmitter' => 'transmitter', 'traversability::Simple' => 'traversability', 
         #:gdb=>true, :valgrind=>true,  
-#        "wait" => 1000 do
+        "wait" => 1000 do
         
     #Orocos.conf.load_dir("./config")
     
@@ -30,9 +31,9 @@ ENV['LC_NUMERIC'] = 'C'
     #traversability.start()
     
     exploration = TaskContext::get 'exploration'
-    exploration.clearPlannerMap()
-    #exploration.configure()
-    ##exploration.start()
+    #exploration.clearPlannerMap()
+    exploration.configure()
+    exploration.start()
     # CONNECT PORTS
 
     ##transmitter.envire_events.connect_to(traversability.mls_map)
@@ -46,7 +47,10 @@ ENV['LC_NUMERIC'] = 'C'
     
     #while true
     #end
+    
+    Vizkit.display exploration
+    Vizkit.exec
    
-    #Readline::readline("Press ENTER to exit ...")
-#end
+    Readline::readline("Press ENTER to exit ...")
+end
 

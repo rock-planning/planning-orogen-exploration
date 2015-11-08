@@ -5,6 +5,7 @@ using_library "envire"
 using_library "exploration"
 import_types_from 'base'
 import_types_from 'envire'
+import_types_from "exploration/Config.hpp"
 import_types_from "exploration/ExplorationPlannerTypes.hpp"
 import_types_from "explorationTypes.hpp"
 
@@ -12,6 +13,9 @@ import_types_from "base"
     
 task_context "Task" do
     needs_configuration
+    
+    property("config", "exploration/Config").
+        doc("Exploration config file.")
 
     property("traversability_map_id", "std/string", "/traversability").
     doc("Try to extract this traversability map, otherwise the first traversability map will be used (if it is the only one)")
@@ -34,6 +38,9 @@ task_context "Task" do
     input_port('envire_environment_in', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Traversability map. Has to be received once")
 
+    output_port('all_goals_debug', 'std/vector<base/samples/RigidBodyState>').
+        doc "Contains all goals before getCheapest() is called / before sorting out"    
+        
     output_port('goals_out', 'std/vector<base/samples/RigidBodyState>').
         doc "Calculated goal, using x and y"
         

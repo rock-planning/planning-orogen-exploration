@@ -39,7 +39,7 @@ bool Task::startHook()
 
     mTraversabilityMapStatus = RTT::NoData;
 
-    planner = Planner();
+    planner = Planner(_config.get());
     
     // Adds fake camera polygons.
     std::vector<ConfPolygon> polys = _polygons;
@@ -70,6 +70,7 @@ void Task::calculateGoals()
 void Task::updateHook()
 {   
     TaskBase::updateHook();
+        
     // After a map has been received.
     if(initialized)
     {
@@ -342,15 +343,23 @@ void Task::generateGoals()
 
     PointList frontiers;
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
+    
     for(int i=0; i<goals_tmp.size(); i++) {
-        std::cout << "Generates " << goals_tmp[i].size() << " frontier goals" << std::endl;
+        LOG_INFO("(%d)Generates %d frontier goals", i, goals_tmp[i].size());
     }
 
+    std::vector<base::samples::RigidBodyState> all_goals;
+    base::samples::RigidBodyState rbs;
+    rbs.orientation.setIdentity();
+    base::Vector3d vec;
     for(FrontierList::const_iterator frIt = goals_tmp.begin(); frIt != goals_tmp.end(); ++frIt) {
       for(PointList::const_iterator pointIt = frIt->begin(); pointIt != frIt->end(); ++pointIt) {
             double x_tr, y_tr;
             planner.mTraversability->fromGrid(pointIt->x, pointIt->y, x_tr, y_tr);
-            goals.push_back(base::Vector3d(x_tr, y_tr, 0));
+            vec = base::Vector3d(x_tr, y_tr, 0);
+            goals.push_back(vec);
+            rbs.position = vec;
+            all_goals.push_back(rbs);
         }
     }
     
@@ -367,9 +376,10 @@ void Task::generateGoals()
     double robot_width = _robot_width_y_m.get();
     std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, 
             robotStateCopy, true, robot_length, robot_width);
-    std::cout << "Got " << finGoals.size() << " final goals" << std::endl;
+    LOG_INFO("Got %d final goals", finGoals.size());
     triggered = false;
     _goals_out.write(finGoals);
+    _all_goals_debug.write(all_goals);
     if(finGoals.size() > 0) {
         _goal_out_best.write(finGoals[0]);
     }
