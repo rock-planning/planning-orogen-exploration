@@ -9,6 +9,7 @@
 #include "envire/maps/MLSGrid.hpp"
 #include "envire/maps/TraversabilityGrid.hpp"
 #include "exploration/Planner.hpp"
+#include <base/Timeout.hpp>
 
 namespace envire {
     class Environment;
@@ -63,6 +64,7 @@ namespace exploration {
         /** robotpose in world-coordinates **/
         base::samples::RigidBodyState robotPose;
         bool triggered;
+        base::Timeout* timeout;
         
         public:
         /** TaskContext constructor for Task

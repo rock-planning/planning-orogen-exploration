@@ -9,15 +9,18 @@ using namespace exploration;
 
 Task::Task(std::string const& name) : TaskBase(name), mEnv(NULL)
 {
+     timeout = new base::Timeout(base::Time::fromSeconds(_flush_map_interval_sec.get()));
 }
 
 Task::Task(std::string const& name, RTT::ExecutionEngine* engine) : 
         TaskBase(name, engine), mEnv(NULL)
 {
+    timeout = new base::Timeout(base::Time::fromSeconds(_flush_map_interval_sec.get()));
 }
 
 Task::~Task()
 {
+    delete timeout;
 }
 
 bool Task::configureHook()
@@ -59,6 +62,8 @@ bool Task::startHook()
     
     initialized = false;
     
+    timeout->restart();
+    
     return true;
 }
 
@@ -75,7 +80,10 @@ void Task::updateHook()
     if(initialized)
     {
         updateMap();
-        flushMap();
+        if(timeout->elapsed()) {
+            flushMap();
+            timeout->restart();
+        }
         // Generate goal will only produce goals if the operation
         // 'calculateGoals' has been called previously.
         generateGoals();
