@@ -17,19 +17,13 @@ namespace envire {
 
 namespace exploration {
 
-    /*! \class Task 
-     * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
-     * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
-     * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
-     * 
-     * \details
-     * The name of a TaskContext is primarily defined via:
-     \verbatim
-     deployment 'deployment_name'
-     task('custom_task_name','exploration::Task')
-     end
-     \endverbatim
-     *  It can be dynamically adapted when the deployment is called with a prefix argument. 
+    /** \class Task 
+     * Calculates exploration goals. First a traversability map has to be received,
+     * from which the exploration map is created. A new traversability map with a 
+     * different size/offset/scale will create a new exploration map and the previous
+     * content will be transferred. A trav map with the same configuration just updates
+     * the obstacles.
+     * \warning Exploration goals have to be triggered explicitely using the port 'calculateGoals'!
      */
     class Task : public TaskBase
     {

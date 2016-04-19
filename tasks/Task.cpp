@@ -9,22 +9,26 @@ using namespace exploration;
 
 Task::Task(std::string const& name) : TaskBase(name), mEnv(NULL)
 {
-     timeout = new base::Timeout(base::Time::fromSeconds(_flush_map_interval_sec.get()));
+    LOG_DEBUG("constructor");
+    timeout = new base::Timeout(base::Time::fromSeconds(_flush_map_interval_sec.get()));
 }
 
 Task::Task(std::string const& name, RTT::ExecutionEngine* engine) : 
         TaskBase(name, engine), mEnv(NULL)
 {
+    LOG_DEBUG("constructor");
     timeout = new base::Timeout(base::Time::fromSeconds(_flush_map_interval_sec.get()));
 }
 
 Task::~Task()
 {
+    LOG_DEBUG("destructor");
     delete timeout;
 }
 
 bool Task::configureHook()
 {
+    LOG_DEBUG("configureHook");
     if (! TaskBase::configureHook())
         return false;
     mEnv = new envire::Environment();
@@ -35,6 +39,7 @@ bool Task::configureHook()
 
 bool Task::startHook()
 {
+    LOG_DEBUG("startHook");
     mTraversabilityMapStatus = RTT::NoData;
     if (!TaskBase::startHook()) {
         return false;
@@ -74,6 +79,7 @@ void Task::calculateGoals()
 
 void Task::updateHook()
 {   
+    LOG_DEBUG("updateHook");
     TaskBase::updateHook();
         
     // After a map has been received.
@@ -92,9 +98,11 @@ void Task::updateHook()
     // Go on if a new map has been received.
     RTT::FlowStatus ret = receiveEnvireData();
     if (ret == RTT::NoData || ret == RTT::OldData || !planner.mTraversability) {
+        LOG_DEBUG("Map not available");
         return;
     }
     
+    LOG_DEBUG("Map available");
     envire::TraversabilityGrid::ArrayType& trav_array = planner.mTraversability->getGridData();
     size_t new_cell_size_x = planner.mTraversability->getCellSizeX();
     size_t new_cell_size_y = planner.mTraversability->getCellSizeY();
@@ -144,6 +152,7 @@ void Task::updateHook()
             new_scale_y != lastScaleY)
             
     {
+        LOG_DEBUG("Map with different size/offset/scale  ");
         envire::Transform new_to_old = lastTraversabilityFrameNode->getTransform().inverse() * 
                 planner.mTraversability->getFrameNode()->getTransform();
 
@@ -215,21 +224,25 @@ void Task::updateHook()
 
 void Task::errorHook()
 {
+    LOG_DEBUG("errorHook");
     TaskBase::errorHook();
 }
 
 void Task::stopHook()
 {
+    LOG_DEBUG("stopHook");
     TaskBase::stopHook();
 }
 
 void Task::cleanupHook()
 {
+    LOG_DEBUG("cleanupHook");
     TaskBase::cleanupHook();
 }
 
 RTT::FlowStatus Task::receiveEnvireData()
 {
+    LOG_DEBUG("receiveEnvireData");
     envire::OrocosEmitter::Ptr binary_event;
     //RTT::FlowStatus ret = RTT::NoData;
     RTT::FlowStatus ret = mTraversabilityMapStatus;
@@ -241,12 +254,13 @@ RTT::FlowStatus Task::receiveEnvireData()
 
     if ((ret == RTT::NoData) || (ret == RTT::OldData))
     {
+        LOG_DEBUG("No new map received");
         return ret;
     }
     
     // Extracts data and adds it to the planner. 
     if(!extractTraversability()) {
-        RTT::log(RTT::Warning) << "Extracting traversability failed" << RTT::endlog();
+        LOG_WARN("Extracting traversability failed");
         return mTraversabilityMapStatus;
     }
 
@@ -256,21 +270,22 @@ RTT::FlowStatus Task::receiveEnvireData()
 }
 
 bool Task::extractTraversability() {
+    LOG_DEBUG("extractTraversability");
     std::vector<envire::TraversabilityGrid*> maps = mEnv->getItems<envire::TraversabilityGrid>();
 
     // Lists all received traversability maps.
     std::stringstream ss;
     if(maps.size()) {
-        std::cout << "Received traversability map(s): " << std::endl;
+        ss << "Received traversability map(s): " << std::endl;
         std::string trav_map_id;
         std::vector<envire::TraversabilityGrid*>::iterator it = maps.begin();
         for(int i=0; it != maps.end(); ++it, ++i)
         {
-            std::cout << i << ": " << (*it)->getUniqueId() << std::endl;
+            ss << i << ": " << (*it)->getUniqueId() << std::endl;
         }
-        RTT::log(RTT::Info) << ss.str() << RTT::endlog(); 
+        LOG_INFO("%s", ss.str().c_str()); 
     } else {
-        RTT::log(RTT::Warning) << "Environment does not contain any traversability grids" << RTT::endlog();
+        LOG_WARN("Environment does not contain any traversability grids");
         return false;
     }
 
@@ -279,29 +294,28 @@ bool Task::extractTraversability() {
         mEnv->getItem< envire::TraversabilityGrid >(_traversability_map_id.get()).get();
     if (!planner.mTraversability)
     {
-        RTT::log(RTT::Info) << "No traversability map with id" << _traversability_map_id.get() << RTT::endlog();
+        LOG_INFO("No traversability map with id %s", _traversability_map_id.get().c_str());
         if(maps.size() > 1) {
-            RTT::log(RTT::Warning) << "The environment contains more    than one traversability map, please specify the map ID" << RTT::endlog();
+            LOG_WARN("The environment contains more than one traversability map, please specify the map ID");
             return false;
         } else {
-            RTT::log(RTT::Info) << "The only given traversability map will be used" << RTT::endlog();
+            LOG_INFO("The only given traversability map will be used");
             std::vector<envire::TraversabilityGrid*>::iterator it = maps.begin();
             planner.mTraversability = mEnv->getItem< envire::TraversabilityGrid >((*it)->getUniqueId()).get();
             if (!planner.mTraversability)
             {
-                RTT::log(RTT::Warning) << "Traversability map '" << (*it)->getUniqueId() << 
-                    "' could not be extracted" << RTT::endlog();
-                return false;
+                LOG_WARN("Traversability map %s could not be extracted", (*it)->getUniqueId().c_str());
             } 
         }
     } 
     
-    RTT::log(RTT::Info) << "Traversability map " << planner.mTraversability->getUniqueId() << " extracted" << RTT::endlog();
+    LOG_INFO("Traversability map %s extracted", planner.mTraversability->getUniqueId().c_str());
     return true;
 }
 
 RTT::FlowStatus Task::updateMap()
 {
+    LOG_DEBUG("updateMap");
     RTT::FlowStatus ret = RTT::NoData;
     while(_pose_samples.read(robotPose, true) == RTT::NewData)
     {
@@ -322,6 +336,7 @@ RTT::FlowStatus Task::updateMap()
 
 bool Task::flushMap()
 {
+    LOG_DEBUG("flushMap");
     envire::Environment tr;
     
     // Generating exploreMap that is going to be dumped.
@@ -342,6 +357,7 @@ bool Task::flushMap()
 
 void Task::generateGoals()
 {
+    LOG_DEBUG("generateGoals");
     goals.clear();
 
     if(!triggered)
@@ -352,7 +368,7 @@ void Task::generateGoals()
     PointList frontiers;
     FrontierList goals_tmp = planner.getCoverageFrontiers(pose);
     
-    for(int i=0; i<goals_tmp.size(); i++) {
+    for(unsigned int i=0; i<goals_tmp.size(); i++) {
         LOG_INFO("(%d)Generates %d frontier goals", i, goals_tmp[i].size());
     }
 
