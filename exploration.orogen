@@ -61,5 +61,9 @@ task_context "Task" do
         doc("Triggers the calculation of a new list of goals")
         
     port_driven 'envire_environment_in', 'pose_samples'
+
+    # If no new exploration points can be found
+    # EXPLORATION_DONE will be set, otherwise the state is RUNNING.
+    runtime_states :EXPLORATION_DONE
     #periodic(1.0)
 end

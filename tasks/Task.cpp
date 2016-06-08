@@ -402,6 +402,16 @@ void Task::generateGoals()
             robotStateCopy, true, robot_length, robot_width);
     LOG_INFO("Got %d final goals", finGoals.size());
     triggered = false;
+    
+    if(finGoals.size() == 0) {
+        LOG_INFO("No new goals found, state is set to EXPLORATION_DONE");
+        printf("No new goals found, state is set to EXPLORATION_DONE\n");
+        state(EXPLORATION_DONE);
+    } else {
+        printf("State back to running");
+        state(RUNNING);
+    }
+
     _goals_out.write(finGoals);
     _all_goals_debug.write(all_goals);
     if(finGoals.size() > 0) {
