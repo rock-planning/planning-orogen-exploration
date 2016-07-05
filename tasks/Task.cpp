@@ -1,7 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "Task.hpp"
-#include "../../../../install/include/envire/maps/TraversabilityGrid.hpp"
+#include <envire/maps/TraversabilityGrid.hpp>
 #include <envire/operators/SimpleTraversability.hpp>
 #define OBSTACLE_DRIVABILITY 0.0
 
