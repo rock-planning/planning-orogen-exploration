@@ -67,3 +67,20 @@ task_context "Task" do
     runtime_states :EXPLORATION_DONE
     #periodic(1.0)
 end
+
+task_context "TraversabilityExplorer" do
+    needs_configuration
+
+    input_port('envire_map', ro_ptr('std/vector</envire/BinaryEvent>')).
+        doc("Traversability map.")
+
+    input_port("robot_pose", "base/samples/RigidBodyState").
+        doc("Robot pose in traversability frame.")
+        
+    output_port('goal_pose', 'base/samples/RigidBodyState').
+        doc("Selected exploration goal from current map.")
+    
+    port_driven 'envire_map'
+    runtime_states :EXPLORATION_DONE
+end
+
