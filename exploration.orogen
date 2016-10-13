@@ -80,6 +80,9 @@ task_context "TraversabilityExplorer" do
     output_port('goal_pose', 'base/samples/RigidBodyState').
         doc("Selected exploration goal from current map.")
     
+    output_port('explore_map', ro_ptr('std/vector</envire/BinaryEvent>')).
+        doc("Debug port, gives the current explored map as envire::Traversability map")
+		
     port_driven 'envire_map'
     runtime_states :EXPLORATION_DONE
 end
