@@ -65,9 +65,9 @@ void TraversabilityExplorer::updateHook()
 		for (size_t x = 0; x < size_x; x++)
 		{
 			point.x = x;
-			if(trav->getProbability(x,y) < 0.5)
+			if(trav->getProbability(x,y) < 0.1)
 				gridMap.setData(point, UNKNOWN);
-			else if(trav->getTraversability(x,y).getDrivability() <= 0)
+			else if(trav->getTraversability(x,y).getDrivability() <= 0.25)
 				gridMap.setData(point, OBSTACLE);
 			else
 				gridMap.setData(point, VISIBLE);
