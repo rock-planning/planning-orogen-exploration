@@ -28,7 +28,9 @@ namespace exploration {
     class Task : public TaskBase
     {
         friend class TaskBase;
-        protected:
+    protected:
+
+        virtual bool sendNextGoal();
 
         Planner planner;
         envire::Environment* mEnv; 
@@ -44,6 +46,9 @@ namespace exploration {
         
         base::samples::RigidBodyState start_vec;
         std::vector<base::Vector3d> goals;
+        std::vector<base::samples::RigidBodyState> finGoals;
+        std::vector<base::samples::RigidBodyState>::iterator nextGoal;
+		
         bool extractTraversability();
         bool extractMLS();
         //reveales areas that have been seen now

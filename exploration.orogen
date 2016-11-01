@@ -59,7 +59,10 @@ task_context "Task" do
 
     operation("calculateGoals").
         doc("Triggers the calculation of a new list of goals")
-        
+
+    operation("sendNextGoal").returns('/bool').
+        doc("Send next from the list of goals")
+
     port_driven 'envire_environment_in', 'pose_samples'
 
     # If no new exploration points can be found
