@@ -398,7 +398,7 @@ void Task::generateGoals()
     // If nothing new can be explored (numberOfExploredCells == 0) the exploration is over.
     double robot_length = _robot_length_x_m.get();
     double robot_width = _robot_width_y_m.get();
-    std::vector<base::samples::RigidBodyState> finGoals = planner.getCheapest(goals, 
+    finGoals = planner.getCheapest(goals, 
             robotStateCopy, true, robot_length, robot_width);
     LOG_INFO("Got %d final goals", finGoals.size());
     triggered = false;
@@ -414,7 +414,17 @@ void Task::generateGoals()
 
     _goals_out.write(finGoals);
     _all_goals_debug.write(all_goals);
-    if(finGoals.size() > 0) {
-        _goal_out_best.write(finGoals[0]);
+    nextGoal = finGoals.begin();
+    sendNextGoal();
+}
+
+bool Task::sendNextGoal()
+{
+    if(nextGoal < finGoals.end())
+    {
+        _goal_out_best.write(*nextGoal);
+        nextGoal++;
+        return true;
     }
+    return false;
 }
