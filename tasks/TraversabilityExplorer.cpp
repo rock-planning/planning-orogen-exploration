@@ -95,13 +95,33 @@ void TraversabilityExplorer::updateHook()
 	if(trav->toGrid(rbs.position[0],rbs.position[1],gridx,gridy))
 	{
 		GridPoint start(gridx, gridy, 0);
-		PointList front_cells = mPlanner.getFrontierCells(&gridMap, start, true);
-		if(front_cells.empty())
+		FrontierList frontiers = mPlanner.getFrontiers(&gridMap, start);
+		if(frontiers.size() == 0)
 		{
-			LOG_ERROR("%s", mPlanner.getStatusMessage());
-			return;
+			if(mPlanner.getStatus() == SUCCESS)
+			{
+				LOG_INFO("%s", mPlanner.getStatusMessage());
+				return;
+			}else
+			{
+				LOG_ERROR("%s", mPlanner.getStatusMessage());
+				return;
+			}
 		}
-		GridPoint goal = front_cells.at(0);
+		
+		FrontierList::iterator largestFrontier;
+		size_t max_length = 0;
+		for(FrontierList::iterator it = frontiers.begin(); it < frontiers.end(); it++)
+		{
+			if(it->size() > max_length)
+			{
+				max_length = it->size();
+				largestFrontier = it;
+			}
+		}
+		LOG_INFO("Largest frontier has %d cells.", max_length);
+		
+		GridPoint goal = largestFrontier->at(0);
 		double posex, posey;
 		trav->fromGrid(goal.x, goal.y, posex, posey);
 		
