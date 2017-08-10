@@ -121,7 +121,7 @@ void TraversabilityExplorer::updateHook()
 		}
 		LOG_INFO("Largest frontier has %d cells.", max_length);
 		
-		GridPoint goal = largestFrontier->at(0);
+		GridPoint goal = largestFrontier->at(largestFrontier->size() / 2);
 		double posex, posey;
 		trav->fromGrid(goal.x, goal.y, posex, posey);
 		
