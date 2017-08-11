@@ -2,8 +2,57 @@
 
 #include <envire/Orocos.hpp>
 #include <envire/maps/TraversabilityGrid.hpp>
+#include <envire/operators/SimpleTraversability.hpp>
+
+#define CLASS_UNKNOWN 0
+#define CLASS_OBSTACLE 1
+#define CUSTOM_CLASSES 2
 
 using namespace exploration;
+
+void growObstacles(envire::TraversabilityGrid& map, double width)
+{
+	const double width_square = pow(width,2);
+	const int 
+	wx = width / map.getScaleX(), 
+	wy = width / map.getScaleY();
+	const double 
+	sx = map.getScaleX(),
+	sy = map.getScaleY();
+
+	envire::TraversabilityGrid::ArrayType& orig_data = map.getGridData(envire::TraversabilityGrid::TRAVERSABILITY);
+	envire::TraversabilityGrid::ArrayType data( orig_data );
+	envire::TraversabilityGrid::ArrayType &probabilityArray(map.getGridData(envire::TraversabilityGrid::PROBABILITY));
+
+	for (unsigned int y = 0; y < map.getHeight(); ++y)
+	{
+		for (unsigned int x = 0; x < map.getWidth(); ++x)
+		{
+			int value = orig_data[y][x];
+			if (value == CLASS_OBSTACLE)
+			{
+				// make everything with radius width around the obstacle also
+				// an obstacle
+				for( int oy = -wy; oy <= wy; ++oy )
+				{
+					for( int ox = -wx; ox <= wx; ++ox )
+					{
+						const int tx = x+ox;
+						const int ty = y+oy;
+						if( (pow(ox*sx,2) + pow(oy*sy,2) < width_square )
+							&& tx >= 0 && tx < (int)map.getWidth()
+							&& ty >= 0 && ty < (int)map.getHeight() )
+						{
+							data[ty][tx] = OBSTACLE;
+							probabilityArray[y][x] = std::numeric_limits< uint8_t >::max();
+						}
+					}
+				}	
+			}
+		}
+	}
+	std::swap( data, orig_data );
+}
 
 TraversabilityExplorer::TraversabilityExplorer(std::string const& name)
 	: TraversabilityExplorerBase(name)
@@ -53,8 +102,11 @@ void TraversabilityExplorer::updateHook()
 	{
 		LOG_WARN("The environment contains more than one traversability map, will use the first!");
 	}
-	envire::TraversabilityGrid* trav = maps[0];
-	envire::TraversabilityGrid::ArrayType& trav_array = maps[0]->getGridData();
+	
+	// Inflate obstacles	
+	envire::TraversabilityGrid* trav = maps[0];	
+	growObstacles(*trav, _obstacle_clearance.get());
+	
 	size_t size_x = trav->getCellSizeX();
 	size_t size_y = trav->getCellSizeY();
 	GridMap gridMap(size_x, size_y);
@@ -77,9 +129,11 @@ void TraversabilityExplorer::updateHook()
 	// Debug output map
 	envire::Environment tr;
 	envire::TraversabilityGrid* exploreMap = mPlanner.coverageMapToTravGrid(gridMap, *trav);
+
 	envire::FrameNode *fr = new envire::FrameNode(trav->getFrameNode()->getTransform());
 	tr.getRootNode()->addChild(fr);
 	tr.attachItem(exploreMap, fr);
+	
 	exploreMap->setFrameNode(fr);
 	envire::OrocosEmitter emitter(&tr, _explore_map);
 	emitter.setTime(base::Time::now());

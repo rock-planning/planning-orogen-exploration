@@ -86,6 +86,9 @@ task_context "TraversabilityExplorer" do
     output_port('explore_map', ro_ptr('std/vector</envire/BinaryEvent>')).
         doc("Debug port, gives the current explored map as envire::Traversability map")
 		
+    property('obstacle_clearance', 'double').
+        doc("Obstacle inflation radius.")
+
     port_driven 'envire_map'
     runtime_states :EXPLORATION_DONE
 end
