@@ -89,6 +89,18 @@ task_context "TraversabilityExplorer" do
     property('obstacle_clearance', 'double').
         doc("Obstacle inflation radius.")
 
+    property('boundary_x_min', 'double', -10).
+        doc("Minimum map extension in x dimension in world coordinates.")
+
+    property('boundary_x_max', 'double', 10).
+        doc("Maximum map extension in x dimension in world coordinates.")
+
+    property('boundary_y_min', 'double', -10).
+        doc("Minimum map extension in y dimension in world coordinates.")
+
+    property('boundary_y_max', 'double', 10).
+        doc("Maximum map extension in y dimension in world coordinates.")
+
     port_driven 'envire_map'
     runtime_states :EXPLORATION_DONE
 end

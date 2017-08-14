@@ -43,7 +43,40 @@ void growObstacles(envire::TraversabilityGrid& map, double width)
 							&& tx >= 0 && tx < (int)map.getWidth()
 							&& ty >= 0 && ty < (int)map.getHeight() )
 						{
-							data[ty][tx] = OBSTACLE;
+							data[ty][tx] = CLASS_OBSTACLE;
+							probabilityArray[y][x] = std::numeric_limits< uint8_t >::max();
+						}
+					}
+				}	
+			}
+		}
+	}
+	std::swap( data, orig_data );
+}
+
+GridMap growObstacles(const GridMap& map, size_t width)
+{
+	GridMap result(map.)
+	for (unsigned int y = 0; y < map.getHeight(); ++y)
+	{
+		for (unsigned int x = 0; x < map.getWidth(); ++x)
+		{
+			int value = orig_data[y][x];
+			if (value == CLASS_OBSTACLE)
+			{
+				// make everything with radius width around the obstacle also
+				// an obstacle
+				for( int oy = -wy; oy <= wy; ++oy )
+				{
+					for( int ox = -wx; ox <= wx; ++ox )
+					{
+						const int tx = x+ox;
+						const int ty = y+oy;
+						if( (pow(ox*sx,2) + pow(oy*sy,2) < width_square )
+							&& tx >= 0 && tx < (int)map.getWidth()
+							&& ty >= 0 && ty < (int)map.getHeight() )
+						{
+							data[ty][tx] = CLASS_OBSTACLE;
 							probabilityArray[y][x] = std::numeric_limits< uint8_t >::max();
 						}
 					}
@@ -124,6 +157,30 @@ void TraversabilityExplorer::updateHook()
 			else
 				gridMap.setData(point, VISIBLE);
 		}
+	}
+	
+	// Add boundary
+	size_t grid_x, grid_y;
+	GridPoint pnt;
+	double x_min = _boundary_x_min.get();
+	double x_max = _boundary_x_max.get();
+	double y_min = _boundary_y_min.get();
+	double y_max = _boundary_y_max.get();
+	
+	for(double map_x = x_min; map_x < x_max; map_x += trav->getScaleX() )
+	{
+		if(trav->toGrid(map_x, y_min, grid_x, grid_y))
+			gridMap.setData(GridPoint(grid_x, grid_y, 0), OBSTACLE);
+		if(trav->toGrid(map_x, y_max, grid_x, grid_y))
+			gridMap.setData(GridPoint(grid_x, grid_y, 0), OBSTACLE);
+	}
+	
+	for(double map_y = y_min; map_y < y_max; map_y += trav->getScaleY() )
+	{
+		if(trav->toGrid(x_min, map_y, grid_x, grid_y))
+			gridMap.setData(GridPoint(grid_x, grid_y, 0), OBSTACLE);
+		if(trav->toGrid(x_max, map_y, grid_x, grid_y))
+			gridMap.setData(GridPoint(grid_x, grid_y, 0), OBSTACLE);
 	}
 	
 	// Debug output map
