@@ -179,6 +179,7 @@ void TraversabilityExplorer::updateHook()
 			if(mPlanner.getStatus() == SUCCESS)
 			{
 				LOG_INFO("%s", mPlanner.getStatusMessage());
+				state(EXPLORATION_DONE);
 				return;
 			}else
 			{
@@ -186,6 +187,7 @@ void TraversabilityExplorer::updateHook()
 				return;
 			}
 		}
+		state(RUNNING);
 		
 		FrontierList::iterator largestFrontier;
 		size_t max_length = 0;
