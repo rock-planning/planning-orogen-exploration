@@ -54,39 +54,6 @@ void growObstacles(envire::TraversabilityGrid& map, double width)
 	std::swap( data, orig_data );
 }
 
-GridMap growObstacles(const GridMap& map, size_t width)
-{
-	GridMap result(map.)
-	for (unsigned int y = 0; y < map.getHeight(); ++y)
-	{
-		for (unsigned int x = 0; x < map.getWidth(); ++x)
-		{
-			int value = orig_data[y][x];
-			if (value == CLASS_OBSTACLE)
-			{
-				// make everything with radius width around the obstacle also
-				// an obstacle
-				for( int oy = -wy; oy <= wy; ++oy )
-				{
-					for( int ox = -wx; ox <= wx; ++ox )
-					{
-						const int tx = x+ox;
-						const int ty = y+oy;
-						if( (pow(ox*sx,2) + pow(oy*sy,2) < width_square )
-							&& tx >= 0 && tx < (int)map.getWidth()
-							&& ty >= 0 && ty < (int)map.getHeight() )
-						{
-							data[ty][tx] = CLASS_OBSTACLE;
-							probabilityArray[y][x] = std::numeric_limits< uint8_t >::max();
-						}
-					}
-				}	
-			}
-		}
-	}
-	std::swap( data, orig_data );
-}
-
 TraversabilityExplorer::TraversabilityExplorer(std::string const& name)
 	: TraversabilityExplorerBase(name)
 {
