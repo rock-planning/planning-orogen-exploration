@@ -189,29 +189,69 @@ void TraversabilityExplorer::updateHook()
 		}
 		state(RUNNING);
 		
+		GridPoint goal;
+                double squared_distance = 0;
+
 		FrontierList::iterator largestFrontier;
 		size_t max_length = 0;
 		for(FrontierList::iterator it = frontiers.begin(); it < frontiers.end(); it++)
 		{
 			if(it->size() > max_length)
 			{
-				max_length = it->size();
-				largestFrontier = it;
+                                // default heuristic
+		                goal = it->at(it->size() / 2);
+                                double posex, posey;
+                                trav->fromGrid(goal.x, goal.y, posex, posey);
+                                squared_distance = pow(posex - rbs.position[0], 2) + pow(posey - rbs.position[1],2) ;
+                                LOG_INFO_S << "Squared distance: " << squared_distance  << " min goal" << pow(_min_goal_distance.value(), 2);
+                                if( squared_distance > pow(_min_goal_distance.value(),2) )
+                                {
+                                    max_length = it->size();
+                                    largestFrontier = it;
+                                } else {
+                                    LOG_WARN_S << "Squared distance: " << squared_distance  << " min goal" << pow(_min_goal_distance.value(), 2);
+                                    // search for a goal at valid distance
+                                    for(int i = 0; i < it->size(); ++i)
+                                    {
+                                        goal = it->at(i);
+
+                                        double posex, posey;
+                                        trav->fromGrid(goal.x, goal.y, posex, posey);
+                                        squared_distance = pow(posex - rbs.position[0], 2) + pow(posey - rbs.position[1],2) ;
+                                        if( squared_distance > pow(_min_goal_distance.value(),2) )
+                                        {
+                                            LOG_WARN_S << "Linear search: squared distance: " << squared_distance  << " min goal" << pow(_min_goal_distance.value(), 2);
+                                            max_length = it->size();
+                                            largestFrontier = it;
+                                        } else {
+                                            LOG_INFO_S << "Linear search: squared distance: " << squared_distance  << " min goal" << pow(_min_goal_distance.value(), 2);
+                                        }
+                                    }
+                                } 
 			}
 		}
-		LOG_INFO("Largest frontier has %d cells.", max_length);
-		
-		GridPoint goal = largestFrontier->at(largestFrontier->size() / 2);
-		double posex, posey;
-		trav->fromGrid(goal.x, goal.y, posex, posey);
-		
-		rbs.position[0] = posex;
-		rbs.position[1] = posey;
-		rbs.time = base::Time::now();
-		_goal_pose.write(rbs);
+
+                if(max_length == 0)
+                {
+		    LOG_INFO("No remaining frontier -- exploration is done");
+                    state(EXPLORATION_DONE);
+                } else {
+		    LOG_INFO("Largest frontier has %d cells.", max_length);
+                    double posex, posey;
+                    trav->fromGrid(goal.x, goal.y, posex, posey);
+                    _goal_distance.write(sqrt(squared_distance));
+                    
+                    rbs.position[0] = posex;
+                    rbs.position[1] = posey;
+                    rbs.time = base::Time::now();
+                    _goal_pose.write(rbs);
+                }
 	}else
 	{
-		LOG_ERROR("Start point is not in map.");
+		LOG_ERROR_S << "Start point x: " << rbs.position[0]
+                    << " y: " << rbs.position[1] 
+                    << " is not in map.";
+                state(START_NOT_IN_MAP);
 	}
 }
 

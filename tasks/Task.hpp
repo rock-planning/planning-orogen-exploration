@@ -146,6 +146,7 @@ namespace exploration {
         inline void clearPlannerMap() {
             planner.clearCoverageMap();
         }
+
     };
 }
 
