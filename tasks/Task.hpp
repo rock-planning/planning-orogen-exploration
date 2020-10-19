@@ -4,7 +4,7 @@
 #define EXPLORATION_TASK_TASK_HPP
 
 #include "exploration/TaskBase.hpp"
-#include "orocos/envire/Orocos.hpp"
+#include "envire/Orocos.hpp"
 #include "envire/Core.hpp"
 #include "envire/maps/MLSGrid.hpp"
 #include "envire/maps/TraversabilityGrid.hpp"
@@ -17,9 +17,9 @@ namespace envire {
 
 namespace exploration {
 
-    /** \class Task 
+    /** \class Task
      * Calculates exploration goals. First a traversability map has to be received,
-     * from which the exploration map is created. A new traversability map with a 
+     * from which the exploration map is created. A new traversability map with a
      * different size/offset/scale will create a new exploration map and the previous
      * content will be transferred. A trav map with the same configuration just updates
      * the obstacles.
@@ -33,7 +33,7 @@ namespace exploration {
         virtual bool sendNextGoal();
 
         Planner planner;
-        envire::Environment* mEnv; 
+        envire::Environment* mEnv;
         RTT::FlowStatus mTraversabilityMapStatus;
         RTT::FlowStatus receiveEnvireData();
         envire::TraversabilityGrid* traversability;
@@ -42,19 +42,19 @@ namespace exploration {
         double lastOffsetY;
         double lastScaleX;
         double lastScaleY;
-        
-        
+
+
         base::samples::RigidBodyState start_vec;
         std::vector<base::Vector3d> goals;
         std::vector<base::samples::RigidBodyState> finGoals;
         std::vector<base::samples::RigidBodyState>::iterator nextGoal;
-		
+
         bool extractTraversability();
         bool extractMLS();
         //reveales areas that have been seen now
         RTT::FlowStatus updateMap();
         //dumps the map on debugport
-        bool flushMap();        
+        bool flushMap();
         // generates the goals
         void generateGoals();
         bool initialized;
@@ -64,7 +64,7 @@ namespace exploration {
         base::samples::RigidBodyState robotPose;
         bool triggered;
         base::Timeout* timeout;
-        
+
         public:
         /** TaskContext constructor for Task
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
@@ -72,10 +72,10 @@ namespace exploration {
          */
         Task(std::string const& name = "exploration::Task");
 
-        /** TaskContext constructor for Task 
-         * \param name Name of the task. This name needs to be unique to make it identifiable for nameservices. 
-         * \param engine The RTT Execution engine to be used for this task, which serialises the execution of all commands, programs, state machines and incoming events for a task. 
-         * 
+        /** TaskContext constructor for Task
+         * \param name Name of the task. This name needs to be unique to make it identifiable for nameservices.
+         * \param engine The RTT Execution engine to be used for this task, which serialises the execution of all commands, programs, state machines and incoming events for a task.
+         *
          */
         Task(std::string const& name, RTT::ExecutionEngine* engine);
 
@@ -84,7 +84,7 @@ namespace exploration {
         ~Task();
 
         virtual void calculateGoals();
-        
+
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the
          * component will stay in PreOperational. Otherwise, it goes into
@@ -114,7 +114,7 @@ namespace exploration {
          *
          * The error(), exception() and fatal() calls, when called in this hook,
          * allow to get into the associated RunTimeError, Exception and
-         * FatalError states. 
+         * FatalError states.
          *
          * In the first case, updateHook() is still called, and recover() allows
          * you to go back into the Running state.  In the second case, the
@@ -142,7 +142,7 @@ namespace exploration {
          * before calling start() again.
          */
         void cleanupHook();
-        
+
         inline void clearPlannerMap() {
             planner.clearCoverageMap();
         }
